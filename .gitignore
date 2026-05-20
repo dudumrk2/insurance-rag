@@ -1,6 +1,9 @@
 # Raw documents contain PII — never commit
 data/raw/
 
+# Known-PII list for redaction (names, IDs) — never commit
+data/known_pii.json
+
 # Built vector indices — rebuilt by build_index.py
 indices/
 
