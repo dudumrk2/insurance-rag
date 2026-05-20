@@ -75,7 +75,7 @@ Two consumers of `answer()`:
 ## 4. Repository layout
 
 ```
-ai-wealth-monitor/insurance-rag/
+insurance-rag/
 ├── data/
 │   ├── raw/                          # original PDFs — gitignored (contain PII)
 │   ├── redacted/                     # *.md, PII removed — committed
