@@ -1,0 +1,31 @@
+# Raw documents contain PII — never commit
+data/raw/
+
+# Built vector indices — rebuilt by build_index.py
+indices/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Models cache (sentence-transformers / docling)
+.cache/
+models/
+
+# Secrets
+.env
+*.key
+serviceAccountKey.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
