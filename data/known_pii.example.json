@@ -1,0 +1,9 @@
+{
+  "_comment": "Copy this file to known_pii.json (gitignored) and fill in the real strings to redact: family member names, ID numbers, emails, anything specific. The redactor removes every exact-match substring listed here. Values below are fake placeholders.",
+  "strings": [
+    "ישראל ישראלי",
+    "שרה ישראלי",
+    "123456789",
+    "israel@example.com"
+  ]
+}

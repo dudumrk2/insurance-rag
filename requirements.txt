@@ -1,0 +1,26 @@
+# Full runtime stack for the insurance-rag pipeline.
+# For step-by-step work you can instead install only the extras you need, e.g.:
+#   pip install -e ".[dev]"          # tests only (Step 1 redaction)
+#   pip install -e ".[pdf]"          # + Docling, to run scripts/redact.py
+#   pip install -e ".[embeddings,vectorstore,generation]"   # Steps 3-4
+#
+# Installing this file pulls everything (PyTorch ~2GB).
+
+# PDF -> Markdown
+docling>=2.0
+
+# Embeddings (intfloat/multilingual-e5-large)
+sentence-transformers>=3.0
+torch>=2.2
+
+# Vector store
+chromadb>=0.5
+
+# Generation (Gemini 2.5 Flash)
+google-genai>=0.8
+
+# Gold-set candidate generation (Claude)
+anthropic>=0.40
+
+# Tests
+pytest>=8.0

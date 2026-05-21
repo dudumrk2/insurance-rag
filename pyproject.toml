@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "insurance-rag"
+version = "0.1.0"
+description = "Retrieval-Augmented Generation pipeline over Hebrew insurance policies"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+
+# The core package (config, utils, redaction, chunking, retrieval glue) is pure
+# Python. Heavy ML/PDF/LLM dependencies are opt-in extras so each build step
+# installs only what it needs.
+dependencies = []
+
+[project.optional-dependencies]
+pdf = ["docling>=2.0"]
+embeddings = ["sentence-transformers>=3.0", "torch>=2.2"]
+vectorstore = ["chromadb>=0.5"]
+generation = ["google-genai>=0.8"]
+goldset = ["anthropic>=0.40"]
+dev = ["pytest>=8.0"]
+all = [
+    "docling>=2.0",
+    "sentence-transformers>=3.0",
+    "torch>=2.2",
+    "chromadb>=0.5",
+    "google-genai>=0.8",
+    "anthropic>=0.40",
+    "pytest>=8.0",
+]
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
