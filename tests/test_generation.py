@@ -5,8 +5,6 @@ API calls or ChromaDB dependencies. Tests verify answer() returns the correct
 structure, handles context properly, and gracefully degrades on empty results.
 """
 
-import pytest
-
 from src.generation import answer
 
 
@@ -153,7 +151,7 @@ def test_context_passed_to_generator_excludes_passage_prefix():
         captured_prompt = prompt
         return "דמה תשובה"
 
-    result = answer(
+    answer(
         question="מה כוסה?",
         _retrieve_fn=_fake_retrieve_fn,
         _generate_fn=capture_prompt,
@@ -249,6 +247,18 @@ def test_empty_retrieval_passes_minimal_context():
     assert "שאלה מסוימת?" in captured_prompt
     # But no chunk content
     assert "כיסוי" not in captured_prompt
+
+
+def test_none_from_generator_returns_nonempty_string():
+    """If the generator returns None (e.g. Gemini safety block / non-STOP finish),
+    answer['answer'] must still be a non-empty string, not None."""
+    result = answer(
+        question="שאלה?",
+        _retrieve_fn=_fake_retrieve_fn,
+        _generate_fn=lambda prompt: None,
+    )
+    assert isinstance(result["answer"], str)
+    assert len(result["answer"]) > 0
 
 
 # ---------------------------------------------------------------------------
