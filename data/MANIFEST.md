@@ -8,8 +8,8 @@
 | Corpus name | Family Insurance Policies (Hebrew) |
 | Domain | Insurance / legal-financial |
 | Source of documents | User's own insurance policies (PII removed) |
-| Number of documents | _TBD (target: 3+ — car, health, home)_ |
-| Approximate pages / tokens | _TBD (verify after Docling; target ~30+ pages)_ |
+| Number of documents | 4 (car policy, car coverages/costs, health policy, home policy) |
+| Approximate pages / tokens | ~671 KB redacted Markdown · ~4,291 lines · ~670,000 chars |
 | File types | PDF → Markdown |
 | License / permission | Personal documents, used with permission, PII redacted |
 | Why suitable for RAG | Contract-specific knowledge a baseline LLM lacks (coverage limits, deductibles, exclusions, waiting periods) |
