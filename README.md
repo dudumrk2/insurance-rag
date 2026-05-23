@@ -40,14 +40,27 @@ Start here — the design and the reasoning behind it:
 - `anthropic` (Claude) — gold-set question generation only
 - `pytest` — tests
 
-## Running (once implemented)
+## Running
+
+Each build step needs only its own dependencies (the full stack pulls PyTorch
+~2GB). Install incrementally:
 
 ```bash
-pip install -r requirements.txt
-python src/redact.py          # data/raw/*.pdf → data/redacted/*.md (manual, one-time)
-python build_index.py         # build the vector indices
-python eval/run_eval.py       # run evaluation over the gold set
+python -m venv .venv && source .venv/Scripts/activate   # Windows; use bin/activate on *nix
+
+# Step 1 — redaction (PDF → redacted Markdown)
+pip install -e ".[pdf]"
+cp data/known_pii.example.json data/known_pii.json   # then fill in real names/IDs (gitignored)
+python scripts/redact.py                              # data/raw/*.pdf → data/redacted/*.md + log
+#   → review data/redaction_log.json before committing
+
+# Later steps (not implemented yet)
+# pip install -e ".[embeddings,vectorstore,generation]"
+# python build_index.py        # build the vector indices
+# python eval/run_eval.py       # run evaluation over the gold set
 ```
+
+Run the tests with `pip install -e ".[dev]" && pytest`.
 
 ## Privacy
 

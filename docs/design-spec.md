@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-20
 **Status:** Approved (pending written-spec review)
-**Branch:** `feat/insurance-rag`
+**Branch:** `master` (standalone repo; Phase 2 integration happens on `feat/insurance-rag` in `ai-wealth-monitor`)
 **Author:** brainstorming session (Dudu + Claude)
 
 ---
@@ -15,7 +15,8 @@ corpus of Israeli (Hebrew) insurance policies. The project serves two goals:
 1. **Academic mid-term assignment** — a self-contained project that meets a fixed rubric
    (data prep, loading, chunking, embedding, indexing, retrieval, generation, citations,
    gold set, evaluation, ablation, 4-page report). Must expose a fixed interface:
-   `answer(question: str) -> dict`.
+   `answer(question: str) -> dict`. Our implementation satisfies this: `family_id` and
+   `strategy` have defaults, so `answer("שאלה?")` works as-is for the assignment.
 2. **Reusable feature for `ai-wealth-monitor`** — the same engine plugs into the existing
    chat (`/api/chat/ask`) so the demo user can upload policies and query them.
 
@@ -58,12 +59,12 @@ generic Wikipedia-style corpus" requirement.
 
 ## 3. Architecture
 
-Three phases, separate entry points:
+Three pipeline stages, separate entry points:
 
 ```
-Phase 1 (Ingest, manual)   scripts/redact.py     PDF(raw) → Docling MD → redact → data/redacted/*.md
-Phase 2 (Index, reproducible)  build_index.py     redacted MD → chunk(×2) → embed → ChromaDB(×2 collections)
-Phase 3 (Ask, online)      src/rag_system.py     question → retrieve top-k → Gemini → {answer, sources, retrieved_chunks}
+Stage 1 (Ingest, manual)       scripts/redact.py   PDF(raw) → Docling MD → redact → data/redacted/*.md
+Stage 2 (Index, reproducible)  build_index.py      redacted MD → chunk(×2) → embed → ChromaDB(×2 collections)
+Stage 3 (Ask, online)          src/rag_system.py   question → retrieve top-k → Gemini → {answer, sources, retrieved_chunks}
 ```
 
 Two consumers of `answer()`:
@@ -75,7 +76,7 @@ Two consumers of `answer()`:
 ## 4. Repository layout
 
 ```
-ai-wealth-monitor/insurance-rag/
+insurance-rag/
 ├── data/
 │   ├── raw/                          # original PDFs — gitignored (contain PII)
 │   ├── redacted/                     # *.md, PII removed — committed
@@ -143,7 +144,7 @@ insurance-rag/indices/
 | `vector_store` | `VectorStore(strategy).add / query / reset` | — | — |
 | `retrieval` | `retrieve(query, k, strategy, family_id)` | str+int+str+str | list[dict] |
 | `generation` | `generate(question, chunks)` | str + list | dict(text, used_chunks) |
-| `rag_system` | `answer(question, family_id, strategy="section_aware")` | str+str+str | dict (per spec) |
+| `rag_system` | `answer(question, family_id="demo_family_001", strategy="section_aware")` | str+str+str | dict (per spec) |
 
 ### Standard `Chunk` shape (everywhere)
 ```python
