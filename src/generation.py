@@ -21,6 +21,11 @@ from __future__ import annotations
 from src.config import DEFAULT_FAMILY_ID, DEFAULT_TOP_K
 from src.retrieval import retrieve
 
+# Returned when the generator yields no text (e.g. Gemini safety block or a
+# non-STOP finish reason makes response.text None). Keeps the answer contract
+# a non-empty string instead of leaking None to callers.
+NO_ANSWER_FALLBACK = "מצטער, לא הצלחתי להפיק תשובה על בסיס המידע הזמין."
+
 
 def answer(
     question: str,
@@ -67,19 +72,14 @@ def answer(
     )
 
     # Build context from chunks (strip "passage: " prefix)
-    context_parts = []
-    for chunk in chunks:
-        text = chunk["text"]
-        # Strip "passage: " prefix if present
-        if text.startswith("passage: "):
-            text = text[9:]  # len("passage: ") = 9
-        context_parts.append(text)
-
+    context_parts = [chunk["text"].removeprefix("passage: ") for chunk in chunks]
     context = "\n".join(context_parts)
 
-    # Build prompt and generate answer
+    # Build prompt and generate answer. The generator may return None (e.g. a
+    # Gemini safety block), so fall back to a fixed message to honor the
+    # non-empty-string answer contract.
     prompt = _build_prompt(question, context)
-    generated_answer = _generate_fn(prompt)
+    generated_answer = _generate_fn(prompt) or NO_ANSWER_FALLBACK
 
     # Extract sources (anchor strings)
     sources = [chunk["anchor"] for chunk in chunks]
