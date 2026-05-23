@@ -58,6 +58,19 @@ def _fake_query_embedding() -> np.ndarray:
     return vec / norm
 
 
+def _axis_vector(*components: tuple[int, float]) -> np.ndarray:
+    """Build an L2-normalized vector with the given (index, value) components.
+
+    Used to construct embeddings whose cosine similarity to a query is known
+    exactly, so ordering assertions are unambiguous (unlike random vectors,
+    which are near-orthogonal and clamp to score 0.0).
+    """
+    vec = np.zeros(_DIM, dtype=np.float32)
+    for idx, val in components:
+        vec[idx] = val
+    return vec / np.linalg.norm(vec)
+
+
 @pytest.fixture()
 def chroma_client():
     """Ephemeral in-memory ChromaDB client."""
@@ -138,14 +151,69 @@ def test_retrieve_results_sorted_by_score_descending(
     result = retrieve(
         query="test query",
         strategy="fixed",
+        family_id="fam1",
         collection=populated_collection,
         embed_fn=mock_embed_fn,
     )
-    if len(result) > 1:
-        scores = [item["score"] for item in result]
-        assert scores == sorted(scores, reverse=True), (
-            f"Scores not sorted descending: {scores}"
-        )
+    assert len(result) > 1, "Expected multiple results to verify ordering"
+    scores = [item["score"] for item in result]
+    assert scores == sorted(scores, reverse=True), (
+        f"Scores not sorted descending: {scores}"
+    )
+
+
+def test_retrieve_orders_most_similar_first(chroma_client):
+    """The chunk most similar to the query is returned first (descending score).
+
+    Uses controlled embeddings with known cosine similarities so the ordering
+    is unambiguous:
+      - chunk A: identical to query        -> similarity 1.0
+      - chunk B: 45 deg from query         -> similarity ~0.707
+      - chunk C: orthogonal to query       -> similarity 0.0
+    Chunks are inserted in WORST-first order to ensure the test fails if the
+    function relies on insertion order rather than similarity.
+    """
+    from src.indexer import build_collection
+
+    query_vec = _axis_vector((0, 1.0))
+    chunk_a = _axis_vector((0, 1.0))  # identical -> most similar
+    chunk_b = _axis_vector((0, 1.0), (1, 1.0))  # 45 deg
+    chunk_c = _axis_vector((1, 1.0))  # orthogonal -> least similar
+
+    def _chunk(name: str) -> dict:
+        return {
+            "chunk_id": f"fam1_fixed_{name}",
+            "text": f"passage: chunk {name}",
+            "source_doc": "doc.md",
+            "strategy": "fixed",
+            "family_id": "fam1",
+            "anchor": name,
+            "section": None,
+        }
+
+    # Insert worst-first (C, B, A) so insertion order != similarity order.
+    chunks = [_chunk("C"), _chunk("B"), _chunk("A")]
+    embs = np.vstack([chunk_c, chunk_b, chunk_a]).astype(np.float32)
+    build_collection("fixed", chunks, embs, client=chroma_client)
+    col = chroma_client.get_collection("insurance_fixed")
+
+    result = retrieve(
+        query="x",
+        strategy="fixed",
+        family_id="fam1",
+        top_k=3,
+        collection=col,
+        embed_fn=lambda _query: query_vec,
+    )
+
+    ids = [r["chunk_id"] for r in result]
+    assert ids == ["fam1_fixed_A", "fam1_fixed_B", "fam1_fixed_C"], (
+        f"Expected most-similar-first ordering, got {ids}"
+    )
+    # Strictly descending scores for these distinct similarities.
+    assert result[0]["score"] > result[1]["score"] > result[2]["score"], (
+        f"Scores not strictly descending: {[r['score'] for r in result]}"
+    )
 
 
 def test_retrieve_respects_top_k(populated_collection, mock_embed_fn):
