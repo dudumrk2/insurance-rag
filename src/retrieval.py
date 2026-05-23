@@ -106,8 +106,6 @@ def retrieve(
             }
         )
 
-    # Results from ChromaDB are already sorted by distance (ascending),
-    # so we need to reverse to get descending similarity order
-    results.reverse()
-
+    # ChromaDB returns nearest-neighbours first (ascending distance), which is
+    # already descending similarity order — no further sorting needed.
     return results
