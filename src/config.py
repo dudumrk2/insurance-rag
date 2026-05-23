@@ -2,9 +2,20 @@
 
 This module holds no logic — it is the single source of truth for every path
 and tunable used across the pipeline. Importing it has no side effects.
+
+A ``.env`` file in the project root is loaded automatically via python-dotenv
+(if installed), so secrets like ``GEMINI_API_KEY`` can be stored there instead
+of being set manually in the shell each time. ``.env`` is gitignored.
 """
 
 from pathlib import Path
+
+try:
+    from dotenv import load_dotenv  # noqa: PLC0415
+
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
+except ImportError:
+    pass  # python-dotenv is optional; fall back to existing env vars
 
 # --- Paths -----------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
