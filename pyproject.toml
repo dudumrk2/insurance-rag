@@ -37,3 +37,6 @@ packages = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: tests that load the embedding model (run with -m slow or -m 'not slow')",
+]
