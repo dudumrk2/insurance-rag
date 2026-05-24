@@ -18,13 +18,38 @@ Usage::
 
 from __future__ import annotations
 
+import re
+
 from src.config import DEFAULT_FAMILY_ID, DEFAULT_TOP_K
 from src.retrieval import retrieve
+from src.utils import get_logger
+
+logger = get_logger(__name__)
 
 # Returned when the generator yields no text (e.g. Gemini safety block or a
 # non-STOP finish reason makes response.text None). Keeps the answer contract
 # a non-empty string instead of leaking None to callers.
 NO_ANSWER_FALLBACK = "מצטער, לא הצלחתי להפיק תשובה על בסיס המידע הזמין."
+
+# Patterns that may indicate prompt injection attempts
+_INJECTION_PATTERNS = [
+    r"ignore.*your.*instruction",
+    r"forget.*your.*system",
+    r"override.*prompt",
+    r"disregard.*previous",
+    r"pretend.*you.*are",
+    r"act.*as.*if",
+    r"bypass.*security",
+    r"jailbreak",
+]
+_INJECTION_REGEX = re.compile("|".join(_INJECTION_PATTERNS), re.IGNORECASE)
+
+
+def _check_for_injection(question: str) -> None:
+    """Log a warning if question contains patterns suggesting prompt injection."""
+    if _INJECTION_REGEX.search(question):
+        logger.warning(f"Potential prompt injection detected in question: {question[:100]!r}")
+        # We don't block the question, but we log it for monitoring
 
 
 def answer(
@@ -52,7 +77,8 @@ def answer(
 
     Returns:
         Dict with keys:
-          - answer:   str, the Gemini-generated answer in Hebrew
+          - answer:   str, the Gemini-generated answer in Hebrew. Falls back to
+                      a default message if generation fails (e.g., safety block or None response).
           - sources:  list[str], anchor strings from retrieved chunks
           - strategy: str, the chunking strategy used
           - question: str, the original question
@@ -62,6 +88,9 @@ def answer(
         _retrieve_fn = retrieve
     if _generate_fn is None:
         _generate_fn = _call_gemini
+
+    # Check for potential prompt injection attempts
+    _check_for_injection(question)
 
     # Retrieve relevant chunks
     chunks = _retrieve_fn(

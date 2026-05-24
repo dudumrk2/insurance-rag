@@ -12,20 +12,29 @@ e5 prefix convention (CRITICAL for retrieval quality):
 
 from __future__ import annotations
 
+import threading
+
 import numpy as np
 
 from src.config import EMBEDDING_MODEL
 
 _model = None  # lazy singleton
+_model_lock = threading.Lock()  # ensures thread-safe initialization
 
 
 def _get_model():
-    """Load (or return cached) SentenceTransformer model."""
+    """Load (or return cached) SentenceTransformer model.
+
+    Thread-safe: uses a lock to prevent race conditions on first load.
+    """
     global _model
     if _model is None:
-        from sentence_transformers import SentenceTransformer  # noqa: PLC0415
+        with _model_lock:
+            # Double-check after acquiring lock
+            if _model is None:
+                from sentence_transformers import SentenceTransformer  # noqa: PLC0415
 
-        _model = SentenceTransformer(EMBEDDING_MODEL)
+                _model = SentenceTransformer(EMBEDDING_MODEL)
     return _model
 
 
