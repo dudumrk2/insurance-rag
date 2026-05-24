@@ -184,6 +184,11 @@ demo seeding) ולאחר את ההגשה. ב-`A` יש משהו להגיש מהר
 במיוחד את הקטגוריות הקשות (`negation`, `comparison`) שבהן LLMs חלשים. 10 שאלות פר
 קטגוריה (factual / numerical / temporal / negation / comparison) = 50 מאוזנות.
 
+**כלי הבחירה — `eval/selector.html`:** כדי לפשט את שלב הבחירה הידני בנינו כלי HTML אינטראקטיבי
+שטוען את `gold_set_candidates.jsonl` ישירות בדפדפן, מציג כל שאלה עם תשובה וציטוט, ומאפשר
+לסמן / לבטל סימון בלחיצה. כשמגיעים ל-50 מסומנים — כפתור ה-Export מוריד את הקובץ הסופי.
+אפס תשתית, אפס server — עובד עם `file://`.
+
 **הבעיה המעניינת שפתרנו — citations:** ה-`chunk_id` משתנה בין אסטרטגיות chunking, אז
 שאלה עם `must_cite_chunk_ids: ["chunk_07"]` שווה כלום באסטרטגיה השנייה. הפתרון:
 **anchor-based citations** — שומרים `source` + `pages` + `section_anchor` במקום
