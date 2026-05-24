@@ -50,20 +50,25 @@ def convert(pdf_path: Path) -> str:
     pipeline_options.layout_batch_size = 1
     pipeline_options.table_batch_size = 1
     pipeline_options.queue_max_size = 2
-    try:
-        pipeline_options.accelerator_options.num_threads = 1
-    except (AttributeError, ValueError):
-        # Field name or configuration differs across Docling versions; continue with defaults
-        pass
-    try:
-        from docling.datamodel.pipeline_options import TableFormerMode
 
-        pipeline_options.table_structure_options.mode = TableFormerMode.FAST
-    except (ImportError, AttributeError):
-        # TableFormerMode or table_structure_options unavailable in this Docling version; use default ACCURATE
-        pass
-
+    # Everything below runs inside the outer try so any unexpected error is
+    # surfaced uniformly as DoclingConversionError (which the CLI knows to skip).
+    # The inner try/excepts swallow only the known cross-version differences.
     try:
+        try:
+            pipeline_options.accelerator_options.num_threads = 1
+        except (AttributeError, ValueError):
+            # Field name or configuration differs across Docling versions; continue with defaults
+            pass
+        try:
+            from docling.datamodel.pipeline_options import TableFormerMode
+
+            pipeline_options.table_structure_options.mode = TableFormerMode.FAST
+        except (ImportError, AttributeError, ValueError):
+            # TableFormerMode or table_structure_options unavailable / rejects the value
+            # in this Docling version; use default ACCURATE
+            pass
+
         converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)

@@ -20,6 +20,7 @@ Options:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import logging
 import sys
@@ -66,13 +67,16 @@ def main() -> None:
 
     totals: dict[str, int] = {name: 0 for name in strategies}
 
-    # Open both output files; write one JSON line per chunk.
-    handles = {
-        name: (PROCESSED_DIR / f"chunks_{name}.jsonl").open("w", encoding="utf-8")
-        for name in strategies
-    }
+    # Open both output files via ExitStack so every handle is closed even if a
+    # later open() fails; write one JSON line per chunk.
+    with contextlib.ExitStack() as stack:
+        handles = {
+            name: stack.enter_context(
+                (PROCESSED_DIR / f"chunks_{name}.jsonl").open("w", encoding="utf-8")
+            )
+            for name in strategies
+        }
 
-    try:
         for md_path in md_files:
             doc_name = md_path.stem
             text = md_path.read_text(encoding="utf-8")
@@ -88,9 +92,6 @@ def main() -> None:
                     doc_name,
                     len(chunks),
                 )
-    finally:
-        for fh in handles.values():
-            fh.close()
 
     log.info("")
     log.info("=== Chunking summary ===")

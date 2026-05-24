@@ -84,6 +84,7 @@ def retrieve(
     # distances is a list of lists (one inner list per query, we have 1 query)
     # For cosine distance with L2-normalized vectors: similarity = 1 - distance
     if not result["ids"] or not result["ids"][0]:
+        logger.debug(f"No results for query, strategy={strategy}, family_id={family_id}, top_k={top_k}")
         return []
 
     ids = result["ids"][0]
@@ -113,6 +114,4 @@ def retrieve(
 
     # ChromaDB returns nearest-neighbours first (ascending distance), which is
     # already descending similarity order — no further sorting needed.
-    if not results:
-        logger.debug(f"No results for query, strategy={strategy}, family_id={family_id}, top_k={top_k}")
     return results
