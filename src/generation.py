@@ -42,12 +42,17 @@ _INJECTION_PATTERNS = [
     r"bypass.*security",
     r"jailbreak",
 ]
-_INJECTION_REGEX = re.compile("|".join(_INJECTION_PATTERNS), re.IGNORECASE)
+_INJECTION_REGEX = re.compile("|".join(_INJECTION_PATTERNS), re.IGNORECASE | re.DOTALL)
+
+# Only scan the start of the question. Caps regex backtracking cost on
+# untrusted input (the patterns use multiple ``.*``) and is where an injection
+# preamble would appear anyway.
+_INJECTION_SCAN_LIMIT = 2000
 
 
 def _check_for_injection(question: str) -> None:
     """Log a warning if question contains patterns suggesting prompt injection."""
-    if _INJECTION_REGEX.search(question):
+    if _INJECTION_REGEX.search(question[:_INJECTION_SCAN_LIMIT]):
         logger.warning(f"Potential prompt injection detected in question: {question[:100]!r}")
 
 
