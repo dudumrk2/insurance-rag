@@ -84,7 +84,8 @@ def _build(strategy: str, batch_size: int) -> None:
     log.info("Embedding %d texts (batch_size=%d) …", len(texts), batch_size)
     embeddings: np.ndarray = embed_texts(texts, batch_size=batch_size, show_progress=True)
     elapsed = time.perf_counter() - t0
-    log.info("Embedding done in %.1f s  (%.0f chunks/s).", elapsed, len(texts) / elapsed)
+    rate = len(texts) / elapsed if elapsed > 0 else 0.0
+    log.info("Embedding done in %.1f s  (%.0f chunks/s).", elapsed, rate)
 
     log.info("Writing ChromaDB collection …")
     INDICES_DIR.mkdir(parents=True, exist_ok=True)

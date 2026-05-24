@@ -118,6 +118,11 @@ def _generate_pairs(doc_name: str, text: str, n: int) -> list[dict]:
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
             pairs = json.loads(raw)
+            if not isinstance(pairs, list):
+                raise ValueError(f"expected a JSON list, got {type(pairs).__name__}")
+            # Keep only well-formed dict entries; a stray string/number here would
+            # crash the downstream `pair.get(...)` loop in main().
+            pairs = [p for p in pairs if isinstance(p, dict)]
             log.info("%s: generated %d pairs (requested %d).", doc_name, len(pairs), n)
             return pairs[:n]
         except Exception as exc:  # noqa: BLE001
@@ -228,9 +233,15 @@ def main() -> None:
 
             anchor = _find_anchor(quote, doc_chunks) if quote else None
             if anchor is None:
-                log.warning("  No anchor found for: %s", question[:60])
-                # Still include the pair — use first chunk anchor as fallback.
-                anchor = doc_chunks[0]["anchor"] if doc_chunks else ""
+                # Never write an empty anchor: in eval, "" matches every chunk
+                # and would falsely score a perfect hit. Fall back to the first
+                # chunk's anchor, or skip the pair when the doc has no chunks.
+                if not doc_chunks:
+                    log.warning("  No anchor and no chunks for: %s — skipping.", question[:60])
+                    skipped += 1
+                    continue
+                log.warning("  No anchor found for: %s — using first-chunk fallback.", question[:60])
+                anchor = doc_chunks[0]["anchor"]
 
             all_pairs.append({
                 "id": f"q{q_index:03d}",

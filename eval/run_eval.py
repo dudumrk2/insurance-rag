@@ -63,6 +63,10 @@ def _gold_rank(results: list[dict], gold_anchor: str) -> int | None:
     Returns ``None`` when no result contains the gold anchor.
     """
     needle = gold_anchor.strip()
+    if not needle:
+        # An empty anchor would match every chunk ("" in raw is always True),
+        # silently inflating Hit@k / MRR. Treat it as "no gold passage".
+        return None
     for rank, result in enumerate(results, start=1):
         raw = result["text"][len("passage: "):]
         if needle in raw:
