@@ -55,10 +55,10 @@ log = logging.getLogger("build_gold_set")
 # ---------------------------------------------------------------------------
 
 _QUOTAS: dict[str, int] = {
-    "car_policy":    10,
-    "car_policy1":   13,
-    "health_policy": 17,
-    "home_policy":   10,
+    "car_policy":    15,
+    "car_policy1":   20,
+    "health_policy": 25,
+    "home_policy":   15,
 }
 
 _GENERATION_MODEL = "gemini-2.5-flash"
