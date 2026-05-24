@@ -1,0 +1,39 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
+      - .
+
+  # Push to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - insurance-rag
+      - --image=us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
+      - --region=us-central1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --memory=4Gi
+      - --cpu=2
+      - --min-instances=1
+      - --max-instances=3
+      - --port=8080
+      - --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest
+
+images:
+  - us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
