@@ -147,16 +147,30 @@ def _load_section_chunks() -> list[dict]:
         return [json.loads(line) for line in f if line.strip()]
 
 
+# Minimum distinctive length for an anchor. A very short anchor (e.g. a stray
+# table cell like 'ד 25') is a substring of many chunks across documents, so in
+# eval it would match the wrong chunk and falsely inflate Hit@k / MRR.
+_MIN_ANCHOR_LEN = 10
+
+
+def _is_usable_anchor(chunk: dict) -> bool:
+    """True if the chunk's anchor is long enough to be a distinctive citation key."""
+    return len(chunk["anchor"].strip()) >= _MIN_ANCHOR_LEN
+
+
 def _find_anchor(quote: str, doc_chunks: list[dict]) -> str | None:
     """Return the anchor of the chunk that best contains *quote*.
 
     Tries exact substring match first, then falls back to the chunk with the
-    longest overlapping token sequence.
+    longest overlapping token sequence. Only chunks with a distinctive anchor
+    (see ``_MIN_ANCHOR_LEN``) are considered, so the gold key never collapses to
+    a non-unique fragment.
     """
     quote_clean = quote.strip()
+    usable = [c for c in doc_chunks if _is_usable_anchor(c)]
 
     # Pass 1: exact substring.
-    for chunk in doc_chunks:
+    for chunk in usable:
         raw = chunk["text"][len("passage: "):]
         if quote_clean in raw:
             return chunk["anchor"]
@@ -165,7 +179,7 @@ def _find_anchor(quote: str, doc_chunks: list[dict]) -> str | None:
     quote_tokens = set(quote_clean.split())
     best_anchor = None
     best_score = 0
-    for chunk in doc_chunks:
+    for chunk in usable:
         raw = chunk["text"][len("passage: "):]
         chunk_tokens = set(raw.split())
         score = len(quote_tokens & chunk_tokens)
@@ -233,15 +247,17 @@ def main() -> None:
 
             anchor = _find_anchor(quote, doc_chunks) if quote else None
             if anchor is None:
-                # Never write an empty anchor: in eval, "" matches every chunk
-                # and would falsely score a perfect hit. Fall back to the first
-                # chunk's anchor, or skip the pair when the doc has no chunks.
-                if not doc_chunks:
-                    log.warning("  No anchor and no chunks for: %s — skipping.", question[:60])
+                # Never write an empty/non-distinctive anchor: in eval a short or
+                # empty anchor matches the wrong chunk(s) and falsely inflates
+                # Hit@k / MRR. Fall back to the first chunk with a usable anchor,
+                # else skip the pair entirely.
+                fallback = next((c["anchor"] for c in doc_chunks if _is_usable_anchor(c)), None)
+                if fallback is None:
+                    log.warning("  No usable anchor for: %s — skipping.", question[:60])
                     skipped += 1
                     continue
-                log.warning("  No anchor found for: %s — using first-chunk fallback.", question[:60])
-                anchor = doc_chunks[0]["anchor"]
+                log.warning("  No anchor matched for: %s — using first-usable-chunk fallback.", question[:60])
+                anchor = fallback
 
             all_pairs.append({
                 "id": f"q{q_index:03d}",
