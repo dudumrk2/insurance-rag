@@ -12,15 +12,25 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from src.generation import answer  # noqa: E402
+from src.utils import get_logger  # noqa: E402
 
-app = Flask(__name__)
+logger = get_logger(__name__)
+
+_DOCS_DIR = Path(__file__).resolve().parent / "docs"
+
+app = Flask(__name__, static_folder=str(_DOCS_DIR), static_url_path="")
 CORS(app)  # allow requests from file:// origin
+
+
+@app.route("/")
+def index():
+    return send_from_directory(_DOCS_DIR, "project_site.html")
 
 
 @app.route("/ask", methods=["POST"])
@@ -40,7 +50,9 @@ def ask():
             "strategy": result.get("strategy", strategy),
         })
     except Exception as exc:  # noqa: BLE001
-        return jsonify({"error": str(exc)}), 500
+        # Log full error server-side; return generic message to client
+        logger.error(f"Error answering question: {exc}", exc_info=True)
+        return jsonify({"error": "Failed to generate answer"}), 500
 
 
 if __name__ == "__main__":

@@ -52,13 +52,15 @@ def convert(pdf_path: Path) -> str:
     pipeline_options.queue_max_size = 2
     try:
         pipeline_options.accelerator_options.num_threads = 1
-    except Exception:  # noqa: BLE001 - field name may differ across versions
+    except (AttributeError, ValueError):
+        # Field name or configuration differs across Docling versions; continue with defaults
         pass
     try:
         from docling.datamodel.pipeline_options import TableFormerMode
 
         pipeline_options.table_structure_options.mode = TableFormerMode.FAST
-    except Exception:  # noqa: BLE001 - optional; ACCURATE is fine if unavailable
+    except (ImportError, AttributeError):
+        # TableFormerMode or table_structure_options unavailable in this Docling version; use default ACCURATE
         pass
 
     try:

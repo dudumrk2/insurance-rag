@@ -1,0 +1,9 @@
+2026-05-23 14:45:20,118 INFO [redact] Reset: cleared 2 existing redacted file(s).
+2026-05-23 14:45:20,119 INFO [redact] Loaded 8 known-PII string(s) from known_pii.json.
+Loading weights:   0%|          | 0/770 [00:00<?, ?it/s]Loading weights:  38%|███▊      | 292/770 [00:00<00:00, 2916.99it/s]Loading weights:  76%|███████▌  | 584/770 [00:00<00:00, 2553.82it/s]Loading weights: 100%|██████████| 770/770 [00:00<00:00, 2537.13it/s]
+2026-05-23 14:46:26,676 INFO [redact] Redacted car_policy.pdf -> car_policy.md (10 removals).
+Loading weights:   0%|          | 0/770 [00:00<?, ?it/s]Loading weights:  34%|███▎      | 259/770 [00:00<00:00, 2554.56it/s]Loading weights:  67%|██████▋   | 515/770 [00:00<00:00, 2354.12it/s]Loading weights:  99%|█████████▊| 760/770 [00:00<00:00, 2393.18it/s]Loading weights: 100%|██████████| 770/770 [00:00<00:00, 2408.35it/s]
+2026-05-23 14:50:56,899 INFO [redact] Redacted car_policy1.pdf -> car_policy1.md (3 removals).
+Loading weights:   0%|          | 0/770 [00:00<?, ?it/s]Loading weights:  30%|███       | 231/770 [00:00<00:00, 2307.54it/s]Loading weights:  60%|██████    | 462/770 [00:00<00:00, 2184.29it/s]Loading weights:  90%|█████████ | 695/770 [00:00<00:00, 2240.90it/s]Loading weights: 100%|██████████| 770/770 [00:00<00:00, 2252.64it/s]
+Stage preprocess failed for run 1, pages [7]: std::bad_alloc
+Stage preprocess failed for run 1, pages [9]: std::bad_alloc
