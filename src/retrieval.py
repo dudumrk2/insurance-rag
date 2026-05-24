@@ -21,6 +21,9 @@ from __future__ import annotations
 
 from src.config import DEFAULT_FAMILY_ID, DEFAULT_TOP_K
 from src.embedder import embed_query
+from src.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def retrieve(
@@ -91,7 +94,9 @@ def retrieve(
     results = []
     for chunk_id, text, metadata, distance in zip(ids, documents, metadatas, distances):
         # Convert distance to similarity (cosine: sim = 1 - dist)
-        # For L2-normalized vectors, sim can be in [-1, 1]; clamp to [0, 1] for practical use
+        # For L2-normalized vectors with cosine distance, distance is in [0, 2]
+        if distance < 0 or distance > 2:
+            logger.warning(f"Unexpected distance {distance} for chunk {chunk_id} (expected [0, 2]); clamping")
         similarity = max(0.0, min(1.0, 1.0 - distance))
 
         results.append(
@@ -108,4 +113,6 @@ def retrieve(
 
     # ChromaDB returns nearest-neighbours first (ascending distance), which is
     # already descending similarity order — no further sorting needed.
+    if not results:
+        logger.debug(f"No results for query, strategy={strategy}, family_id={family_id}, top_k={top_k}")
     return results
