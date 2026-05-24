@@ -912,8 +912,10 @@ function copyCode(name) {
   });
 }
 
-// Live Demo
-const API = 'http://localhost:5000/ask';
+// Live Demo — use relative URL when served from HTTP, fallback to localhost for file://
+const API = window.location.protocol === 'file:'
+  ? 'http://localhost:5000/ask'
+  : '/ask';
 
 async function askQuestion() {
   const q = document.getElementById('q-input').value.trim();
