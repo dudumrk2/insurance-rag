@@ -198,6 +198,120 @@ PDF
 
 ---
 
+## נספח — הרצה, קישורים והסברים נוספים
+
+### א. הרצת ה-Pipeline מקצה לקצה
+
+להלן סדר הפקודות המלא להרצת הפרויקט מאפס על מכונה חדשה:
+
+```bash
+# 1. שכפול והתקנה
+git clone https://github.com/dudumrk2/insurance-rag.git
+cd insurance-rag
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[all]"
+
+# 2. הגדרת מפתחות API (יצירת קובץ .env בשורש הפרויקט)
+echo "GEMINI_API_KEY=your_key_here" > .env
+
+# 3. המרת PDF ל-Markdown (דורש קבצי PDF ב-data/raw/)
+python scripts/pdf_to_md.py
+
+# 4. הסרת PII מהמסמכים
+python scripts/redact.py
+
+# 5. בניית ה-Index (chunking + embedding + ChromaDB)
+#    כותב: data/processed/chunks_*.jsonl + indices/
+python build_index.py
+
+# 6. בניית Gold Set (ייצור 75 מועמדים לאחר מכן בחירה ידנית של 50)
+python scripts/build_gold_set.py --out eval/gold_set_candidates.jsonl
+#    פתח eval/selector.html בדפדפן לבחירת 50 שאלות → שמור ל-eval/gold_set.jsonl
+
+# 7. הרצת Ablation Study (כולל fixed_300 ו-fixed_700 — ~45 דקות CPU)
+python eval/run_eval.py --out eval/ablation_results.md
+
+# 8. הרצת שאילתה בודדת מה-CLI
+python -c "
+from src.generation import answer
+result = answer('מה הפרנשייז על נזק מלא לרכב?', strategy='section_aware')
+print(result['answer'])
+print('מקורות:', result['sources'])
+"
+
+# 9. הרצת כל הטסטים
+python -m pytest tests/ -v
+```
+
+---
+
+### ב. קישורים לריפו
+
+| קובץ / תיקייה | תיאור | קישור |
+|---|---|---|
+| `src/chunking.py` | שתי אסטרטגיות החלוקה | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/src/chunking.py) |
+| `src/embedder.py` | Singleton של multilingual-e5-large + e5 prefixes | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/src/embedder.py) |
+| `src/retrieval.py` | retrieve() עם family_id filter | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/src/retrieval.py) |
+| `src/generation.py` | answer() — Gemini + RAG context | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/src/generation.py) |
+| `src/redaction.py` | הסרת PII (regex + known strings) | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/src/redaction.py) |
+| `build_index.py` | CLI לבניית ChromaDB indexes | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/build_index.py) |
+| `scripts/build_gold_set.py` | ייצור 75 מועמדים ע"י Gemini | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/scripts/build_gold_set.py) |
+| `eval/selector.html` | כלי HTML אינטראקטיבי לבחירת 50 שאלות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/selector.html) |
+| `eval/run_eval.py` | Ablation Study — Hit@k ו-MRR | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/run_eval.py) |
+| `eval/gold_set.jsonl` | 50 שאלות הזהב הסופיות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/gold_set.jsonl) |
+| `eval/ablation_results.md` | תוצאות ה-Ablation Study | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/ablation_results.md) |
+| `docs/DESIGN_RATIONALE.md` | תיעוד כל ההחלטות העיצוביות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/docs/DESIGN_RATIONALE.md) |
+| `tests/` | 50+ טסטים (redaction, chunking, embedder, retrieval, eval) | [🔗](https://github.com/dudumrk2/insurance-rag/tree/master/tests) |
+
+**ריפו ראשי:** https://github.com/dudumrk2/insurance-rag
+
+---
+
+### ג. הסברים נוספים שלא נכללו בגוף הדוח
+
+#### מדוע לא השתמשנו ב-OpenAI Embeddings?
+
+שלוש סיבות:
+1. **עלות** — כל rebuild של ה-index (944+ chunks) עולה כסף; מודל מקומי = $0.
+2. **פרטיות** — הפוליסות מכילות PII גם לאחר redaction חלקי; שליחתן ל-API חיצוני מוסיפה סיכון.
+3. **הדגמת הבנה** — המשימה האקדמית מעריכה ידע על רכיבי ה-pipeline, לא עטיפת API.
+
+#### מנגנון ה-Anchor ומדוע הוא חשוב
+
+ב-RAG רגיל, citation מזוהה לפי `chunk_id`. הבעיה: `chunk_id` הוא `doc_chunk_0042` — מספר הרצה שמשתנה לחלוטין בין `fixed_500` (944 chunks) ל-`section_aware` (447 chunks). אם ה-gold set בנוי עם `chunk_id` של אסטרטגיה אחת, לא ניתן להשוות לאסטרטגיה שנייה.
+
+הפתרון: ה-**anchor** = 80 התווים הראשונים של טקסט ה-chunk (ללא prefix). 80 תווים מספיקים לייחוד חד-משמעי של passage בתוך מסמך, ואותה מחרוזת תופיע (כ-substring) גם בחתיכות fixed — כל עוד החתיכה מכסה את אותו מקטע טקסט.
+
+#### מה קרה עם ה-PII של כפר סבא?
+
+בסקירה ידנית של קובץ ה-redaction log התגלה שכתובת עם שם עיר ("כפר סבא") לא זוהתה על ידי הרגקס (שמות ערים אינם PII מובנה). הפתרון: הוספתה ל-`data/known_pii.json` והרצת הסקריפט מחדש. זה מדגיש את הצורך בסקירה ידנית — אין אוטומציה מושלמת.
+
+#### זמני ריצה בפועל
+
+| שלב | זמן בפועל | חומרה |
+|---|---|---|
+| Docling — 4 PDF ל-Markdown | ~3 דקות | CPU, 8GB RAM |
+| build_index (944 + 447 chunks) | ~8 דקות | CPU |
+| build_gold_set (75 שאלות) | ~4 דקות | Gemini API |
+| run_eval — section_aware + fixed_500 | ~8 דקות | CPU |
+| run_eval — כולל fixed_300 + fixed_700 | ~50 דקות | CPU |
+
+#### תצורת הפרויקט ב-pyproject.toml
+
+התלויות מחולקות ל-extras כדי שכל שלב יתקין רק מה שצריך:
+
+```toml
+[project.optional-dependencies]
+pdf        = ["docling>=2.0"]
+embeddings = ["sentence-transformers>=3.0", "torch>=2.2"]
+vectorstore= ["chromadb>=0.5"]
+generation = ["google-genai>=0.8"]
+dev        = ["pytest>=8.0", "python-dotenv>=1.0"]
+all        = [...]   # הכל ביחד
+```
+
+---
+
 ## רשימת מקורות
 
 1. Wang, L. et al. (2024). *Multilingual E5 Text Embeddings: A Technical Report*. arXiv:2402.05672.
