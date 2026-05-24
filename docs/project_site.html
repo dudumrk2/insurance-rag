@@ -507,8 +507,8 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
   <h1 class="hero-title">מערכת RAG לפוליסות<br>ביטוח בעברית</h1>
   <p class="hero-sub">שליפה מוגברת-ייצור על קורפוס פוליסות ביטוח ישראליות —<br>מ-PDF גולמי ועד תשובה מנומקת עם ציטוטים</p>
   <div class="hero-stats">
-    <div class="stat-chip"><span class="val">0.720</span><span class="lbl">Hit@5</span></div>
-    <div class="stat-chip"><span class="val">0.534</span><span class="lbl">MRR</span></div>
+    <div class="stat-chip"><span class="val">0.740</span><span class="lbl">Hit@5</span></div>
+    <div class="stat-chip"><span class="val">0.529</span><span class="lbl">MRR</span></div>
     <div class="stat-chip"><span class="val">50</span><span class="lbl">שאלות זהב</span></div>
     <div class="stat-chip"><span class="val">4</span><span class="lbl">פוליסות</span></div>
   </div>
@@ -703,56 +703,56 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
     <table class="results-table">
       <thead><tr><th>תצורה</th><th>קטעים</th><th>Hit@1</th><th>Hit@3</th><th>Hit@5</th><th>MRR</th></tr></thead>
       <tbody>
-        <tr class="best"><td>section_aware ⭐</td><td>447</td><td>0.400</td><td>0.660</td><td>0.720</td><td>0.534</td></tr>
-        <tr><td>fixed_300</td><td>1,700</td><td>0.180</td><td>0.240</td><td>0.300</td><td>0.216</td></tr>
-        <tr><td>fixed_700</td><td>656</td><td>0.080</td><td>0.220</td><td>0.280</td><td>0.150</td></tr>
-        <tr><td>fixed_500</td><td>944</td><td>0.040</td><td>0.200</td><td>0.280</td><td>0.119</td></tr>
+        <tr class="best"><td>section_aware ⭐</td><td>447</td><td>0.380</td><td>0.660</td><td>0.740</td><td>0.529</td></tr>
+        <tr><td>fixed_500</td><td>944</td><td>0.060</td><td>0.220</td><td>0.300</td><td>0.139</td></tr>
+        <tr><td>fixed_300</td><td>1,700</td><td>0.160</td><td>0.220</td><td>0.280</td><td>0.196</td></tr>
+        <tr><td>fixed_700</td><td>656</td><td>0.080</td><td>0.180</td><td>0.260</td><td>0.138</td></tr>
       </tbody>
     </table>
     <div class="bar-chart">
       <h4>Hit@5 — שיעור שאלות עם קטע נכון בתוצאות top-5</h4>
       <div class="bar-row">
         <div class="bar-label">section_aware</div>
-        <div class="bar-wrap"><div class="bar-fill accent" style="width:72%">72%</div></div>
-        <div class="bar-val">0.720</div>
+        <div class="bar-wrap"><div class="bar-fill accent" style="width:74%">74%</div></div>
+        <div class="bar-val">0.740</div>
       </div>
       <div class="bar-row">
-        <div class="bar-label">fixed_300</div>
+        <div class="bar-label">fixed_500</div>
         <div class="bar-wrap"><div class="bar-fill muted" style="width:30%">30%</div></div>
         <div class="bar-val">0.300</div>
       </div>
       <div class="bar-row">
-        <div class="bar-label">fixed_700</div>
+        <div class="bar-label">fixed_300</div>
         <div class="bar-wrap"><div class="bar-fill muted" style="width:28%">28%</div></div>
         <div class="bar-val">0.280</div>
       </div>
       <div class="bar-row">
-        <div class="bar-label">fixed_500</div>
-        <div class="bar-wrap"><div class="bar-fill muted" style="width:28%">28%</div></div>
-        <div class="bar-val">0.280</div>
+        <div class="bar-label">fixed_700</div>
+        <div class="bar-wrap"><div class="bar-fill muted" style="width:26%">26%</div></div>
+        <div class="bar-val">0.260</div>
       </div>
     </div>
     <div class="bar-chart" style="margin-top:24px;">
       <h4>MRR — ממוצע הדדי של הדירוג (גבוה יותר = קרוב יותר למקום 1)</h4>
       <div class="bar-row">
         <div class="bar-label">section_aware</div>
-        <div class="bar-wrap"><div class="bar-fill accent" style="width:53.4%">0.534</div></div>
-        <div class="bar-val">0.534</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label">fixed_300</div>
-        <div class="bar-wrap"><div class="bar-fill muted" style="width:21.6%">0.216</div></div>
-        <div class="bar-val">0.216</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label">fixed_700</div>
-        <div class="bar-wrap"><div class="bar-fill muted" style="width:15%">0.150</div></div>
-        <div class="bar-val">0.150</div>
+        <div class="bar-wrap"><div class="bar-fill accent" style="width:52.9%">0.529</div></div>
+        <div class="bar-val">0.529</div>
       </div>
       <div class="bar-row">
         <div class="bar-label">fixed_500</div>
-        <div class="bar-wrap"><div class="bar-fill muted" style="width:11.9%">0.119</div></div>
-        <div class="bar-val">0.119</div>
+        <div class="bar-wrap"><div class="bar-fill muted" style="width:13.9%">0.139</div></div>
+        <div class="bar-val">0.139</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">fixed_300</div>
+        <div class="bar-wrap"><div class="bar-fill muted" style="width:19.6%">0.196</div></div>
+        <div class="bar-val">0.196</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">fixed_700</div>
+        <div class="bar-wrap"><div class="bar-fill muted" style="width:13.8%">0.138</div></div>
+        <div class="bar-val">0.138</div>
       </div>
     </div>
   </div>
@@ -768,7 +768,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <div class="concl-card">
         <div class="concl-icon">🏆</div>
         <h3>section_aware מנצחת</h3>
-        <p>על מסמכים עם מבנה כותרות ברור — חלוקה לפי סעיפים טבעיים עולה פי 2.5 ב-MRR על כל וריאנט fixed_size</p>
+        <p>על מסמכים עם מבנה כותרות ברור — חלוקה לפי סעיפים טבעיים עולה פי ~2.7 ב-MRR על כל וריאנט fixed_size</p>
       </div>
       <div class="concl-card">
         <div class="concl-icon">🔑</div>
@@ -817,10 +817,10 @@ python build_index.py          # embedding + ChromaDB
       <div id="tab-eval" class="tab-panel">
         <button class="copy-btn" onclick="copyCode('eval')">העתק</button>
         <pre id="code-eval">python eval/run_eval.py --out eval/ablation_results.md
-# section_aware  Hit@5=0.720  MRR=0.534
-# fixed_500      Hit@5=0.280  MRR=0.119
-# fixed_300      Hit@5=0.300  MRR=0.216
-# fixed_700      Hit@5=0.280  MRR=0.150</pre>
+# section_aware  Hit@5=0.740  MRR=0.529
+# fixed_500      Hit@5=0.300  MRR=0.139
+# fixed_300      Hit@5=0.280  MRR=0.196
+# fixed_700      Hit@5=0.260  MRR=0.138</pre>
       </div>
       <div id="tab-query" class="tab-panel">
         <button class="copy-btn" onclick="copyCode('query')">העתק</button>
