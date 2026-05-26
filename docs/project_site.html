@@ -500,6 +500,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
   <a href="#run">הרצה</a>
   <a href="#demo">דמו חי</a>
   <a href="#embedding-ablation">נספח: הטמעות</a>
+  <a href="#answer-evaluation">הערכת תשובות</a>
 </nav>
 
 <!-- HERO -->
@@ -949,6 +950,58 @@ print('מקורות:', result['sources'])
         <div class="concl-icon">⚡</div>
         <h3>בלי torch מקומי</h3>
         <p>לאינטגרציה בסביבת ענן רזה — ללא sentence-transformers, ללא ~3GB של משקל מודל, רק קריאת API</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ANSWER EVALUATION SECTION -->
+<section id="answer-evaluation">
+  <div class="reveal">
+    <h2 class="section-title">הערכת איכות <span>תשובות</span></h2>
+    <p class="section-sub">10 תשובות נבדקו ידנית מול קבוצת הזהב</p>
+    <table class="results-table" style="font-size:0.85rem;">
+      <thead><tr><th>#</th><th>סוג שאלה</th><th>סיווג</th><th>הערה</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>מספרי (דמי השתתפות)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>מודל אמר 0, אך התשובה הצפויה היא 90 ש״ח</td></tr>
+        <tr class="best"><td>2</td><td>מספרי (גבול אחריות)</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>התאמה מדויקת: 2,833,953 ש״ח</td></tr>
+        <tr class="best"><td>3</td><td>תנאי / עובדתי</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>כל התנאים התאימו (גיל 21+, רישיון 1+ שנה)</td></tr>
+        <tr><td>4</td><td>מספרי (סכום ביטוח)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>המודל אמר שהמידע לא זמין, אך התשובה היא 1,133 ש״ח</td></tr>
+        <tr><td>5</td><td>מספרי (פרמיה)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>המודל אמר שלא מצא את הפרמיה, אך התשובה היא 58 ש״ח</td></tr>
+        <tr><td>6</td><td>מספרי (פרמיה)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>המודל אמר אין פרמיה נפרדת, אך התשובה הצפויה היא 274 ש״ח</td></tr>
+        <tr class="best"><td>7</td><td>תנאים מורכבים</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>תשובה מקיפה וערוכה היטב על תנאי הרכב החלופי</td></tr>
+        <tr class="best"><td>8</td><td>עובדתי</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>התאמה מדויקת של התנאי המוקדם</td></tr>
+        <tr class="best"><td>9</td><td>השלכות חוזיות</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>תשובה מפורטת וכוללת על ההשלכות של מידע לא כנה</td></tr>
+        <tr class="best"><td>10</td><td>עובדתי</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>התאמה מדויקת</td></tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:32px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+      <div class="stat-chip" style="background:rgba(52,211,153,0.1);border-color:var(--accent2);">
+        <span class="val" style="color:var(--accent2);">6</span><span class="lbl">Correct</span>
+      </div>
+      <div class="stat-chip" style="background:rgba(248,113,113,0.1);border-color:#f87171;">
+        <span class="val" style="color:#f87171;">4</span><span class="lbl">Incorrect</span>
+      </div>
+    </div>
+
+    <div class="conclusions" style="margin-top:36px;">
+      <div class="concl-card">
+        <div class="concl-icon">💪</div>
+        <h3>חוזקות</h3>
+        <p>המודל מתפקד טוב על שאלות עובדתיות וחוזיות מסובכות — יכול להשחזר מרובות קטעים ולשלב אותם לתשובה ממוקדת</p>
+      </div>
+      <div class="concl-card">
+        <div class="concl-icon">⚠️</div>
+        <h3>חולשות</h3>
+        <p>בתשימות מספריות (דמים, תעריפים), המודל מראה קצב חזוויר נמוך (40%) — אולי בגלל שליפה חלשה או מודל הטמעות</p>
+      </div>
+      <div class="concl-card">
+        <div class="concl-icon">🔮</div>
+        <h3>שיפור עתידי</h3>
+        <p>שילוב שליפה היברידית (BM25 + וקטורית) יכול לשפר שאלות מספריות, כי BM25 תופסת התאמה מילולית מדויקת</p>
       </div>
     </div>
   </div>
