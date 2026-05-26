@@ -844,7 +844,8 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
     <!-- Embedding ablation -->
     <div style="margin-top:40px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px 28px;">
       <h3 style="font-size:1.15rem; margin-bottom:8px; color:var(--text);">השחלפת מודל הטמעות (Gemini vs e5)</h3>
-      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:20px;">הוחלף <strong>רק</strong> מודל ההטמעות ל-<code>gemini-embedding-001</code> (API, 768d) — שאר ה-pipeline זהה. שני מדדים בלתי-תלויים: <strong>שליפה</strong> (Hit@5, MRR למטה) ו-<strong>תשובות</strong> (10 דגימות ידניות, ראה למטה).</p>
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:12px;">הוחלף <strong>רק</strong> מודל ההטמעות ל-<code>gemini-embedding-001</code> (API, 768d) — שאר ה-pipeline זהה. שני מדדים בלתי-תלויים: <strong>שליפה</strong> (Hit@5, MRR למטה) ו-<strong>תשובות</strong> (10 דגימות ידניות, ראה למטה).</p>
+      <p style="color:var(--muted);font-size:0.82rem;margin-bottom:20px;font-style:italic;">† ה-e5 baseline כאן (0.720 / 0.534) הוא ריצה עצמאית שנעשתה במקביל לניסוי ההטמעות — ההבדל מ-0.740 / 0.529 בטבלת האבלציה לעיל נובע מ-variance של HNSW בין ריצות, לא מהבדל בתצורה.</p>
       <table class="results-table" style="margin-top:0;">
         <thead><tr><th>מודל</th><th>ממד</th><th>Hit@1</th><th>Hit@3</th><th>Hit@5</th><th>MRR</th></tr></thead>
         <tbody>

@@ -4,7 +4,7 @@ A Retrieval-Augmented Generation (RAG) pipeline over a corpus of Hebrew insuranc
 policies. Built for a course mid-term assignment, designed to also plug into the
 `ai-wealth-monitor` application later.
 
-> **Status:** Design complete, implementation not started yet.
+> **Status:** Complete — ingestion, chunking, embeddings, retrieval, generation, evaluation, and Flask demo are all implemented.
 
 ## What this is
 
@@ -12,12 +12,15 @@ Ask natural-language questions about insurance policies (coverage limits, deduct
 exclusions, waiting periods, renewal dates) and get answers grounded in the policy text,
 with citations to the exact source chunks.
 
-Public interface (assignment-mandated):
+Public interface:
 
 ```python
 answer(question: str) -> dict
-# → {"answer": str, "sources": list[str], "retrieved_chunks": list[dict]}
+# → {"answer": str, "sources": list[str], "strategy": str, "question": str}
 ```
+
+> **Known gap:** `sources` contains all retrieved chunk anchors, not model-selected citations.
+> Returning `retrieved_chunks` with per-chunk metadata is a documented future improvement.
 
 ## Documentation
 
@@ -54,10 +57,16 @@ cp data/known_pii.example.json data/known_pii.json   # then fill in real names/I
 python scripts/redact.py                              # data/raw/*.pdf → data/redacted/*.md + log
 #   → review data/redaction_log.json before committing
 
-# Later steps (not implemented yet)
-# pip install -e ".[embeddings,vectorstore,generation]"
-# python build_index.py        # build the vector indices
-# python eval/run_eval.py       # run evaluation over the gold set
+# Step 2 — build vector indices
+pip install -e ".[embeddings,vectorstore,generation]"
+python build_index.py
+
+# Step 3 — run retrieval evaluation (ablation study)
+python eval/run_eval.py
+
+# Step 4 — start the Flask demo server
+pip install -e ".[server]"
+python server.py
 ```
 
 Run the tests with `pip install -e ".[dev]" && pytest`.
