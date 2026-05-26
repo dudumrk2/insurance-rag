@@ -897,6 +897,37 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
         ⬇️ <strong>רגרסיה</strong>: Q2 (גבול אחריות) — gemini שלף קטע סמנטית-קרוב אבל לא נכון.
         ↔️ <strong>כשלים משותפים</strong> (Q1, Q4): שורות טבלה לא נשמרות ב-<code>section_aware</code> — מגבלת <em>chunking</em>, לא embedding.
       </p>
+
+      <!-- Spotlight: actual gemini answers (the wins + the regression) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;margin-bottom:24px;">
+        <!-- Improvements -->
+        <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:var(--radius);padding:20px 22px;">
+          <h4 style="color:var(--accent2);font-size:1rem;margin-bottom:14px;">🎯 איפה gemini שינה תשובה לטובה</h4>
+
+          <div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(52,211,153,0.15);">
+            <p style="font-size:0.85rem;color:var(--text);margin-bottom:8px;"><strong>Q5</strong> — מהי הפרמיה השנתית עבור כיסוי לפנסים ומראות צד?</p>
+            <p style="font-size:0.82rem;color:#f87171;margin-bottom:4px;line-height:1.5;">🔴 <strong>e5:</strong> "המודל לא מצא את הפרמיה"</p>
+            <p style="font-size:0.82rem;color:var(--accent2);line-height:1.5;">🟢 <strong>gemini:</strong> "הפרמיה השנתית עבור כיסוי לפנסים ומראות צד היא <strong>58 ש״ח</strong>" ✓</p>
+          </div>
+
+          <div>
+            <p style="font-size:0.85rem;color:var(--text);margin-bottom:8px;"><strong>Q6</strong> — מהי הפרמיה עבור שירותי גרירה הכלולים בביטוח צד ג'?</p>
+            <p style="font-size:0.82rem;color:#f87171;margin-bottom:4px;line-height:1.5;">🔴 <strong>e5:</strong> "המודל אמר אין פרמיה נפרדת"</p>
+            <p style="font-size:0.82rem;color:var(--accent2);line-height:1.5;">🟢 <strong>gemini:</strong> "הפרמיה עבור שירותי גרירה הכלולים בביטוח צד ג' היא <strong>274 ש״ח</strong>" ✓</p>
+          </div>
+        </div>
+
+        <!-- Regression -->
+        <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius);padding:20px 22px;">
+          <h4 style="color:#f87171;font-size:1rem;margin-bottom:14px;">⬇️ איפה gemini דווקא טעה</h4>
+
+          <p style="font-size:0.85rem;color:var(--text);margin-bottom:8px;"><strong>Q2</strong> — מהו גבול האחריות המקסימלי לביטוח אחריות כלפי צד שלישי בגין נזקי רכוש?</p>
+          <p style="font-size:0.82rem;color:var(--accent2);margin-bottom:4px;line-height:1.5;">🟢 <strong>e5:</strong> "<strong>2,833,953 ש״ח</strong>" ✓ (שלף את הטבלה הראשית)</p>
+          <p style="font-size:0.82rem;color:#f87171;margin-bottom:10px;line-height:1.5;">🔴 <strong>gemini:</strong> "600,000 ש״ח למקרה ביטוח; 1,200,000 ש״ח לכל מקרי הביטוח" — שלף את <em>טבלת גבולות הפיצויים</em>, שדה סמנטית-קרוב אך לא הנכון.</p>
+          <p style="font-size:0.78rem;color:var(--muted);font-style:italic;line-height:1.5;border-top:1px solid rgba(248,113,113,0.15);padding-top:10px;margin-top:10px;">לקח: גם semantic search חזק יכול ליפול כשיש מספר טבלאות סמנטית-קרובות באותו מסמך. שני המספרים נכונים-לעצמם — אבל לא רלוונטיים לשאלה.</p>
+        </div>
+      </div>
+
       <div class="conclusions" style="margin-top:16px;">
         <div class="concl-card">
           <div class="concl-icon">💪</div>
