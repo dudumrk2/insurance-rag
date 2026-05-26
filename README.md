@@ -12,12 +12,15 @@ Ask natural-language questions about insurance policies (coverage limits, deduct
 exclusions, waiting periods, renewal dates) and get answers grounded in the policy text,
 with citations to the exact source chunks.
 
-Public interface (assignment-mandated):
+Public interface:
 
 ```python
 answer(question: str) -> dict
-# → {"answer": str, "sources": list[str], "retrieved_chunks": list[dict]}
+# → {"answer": str, "sources": list[str], "strategy": str, "question": str}
 ```
+
+> **Known gap:** `sources` contains all retrieved chunk anchors, not model-selected citations.
+> Returning `retrieved_chunks` with per-chunk metadata is a documented future improvement.
 
 ## Documentation
 
