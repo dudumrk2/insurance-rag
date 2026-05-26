@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>מערכת RAG לפוליסות ביטוח בעברית</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&display=swap" rel="stylesheet">
 <style>
 /* ── Reset & Variables ─────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,7 +19,7 @@
   --muted:     #94a3b8;
   --border:    #334155;
   --radius:    12px;
-  --font:      'Segoe UI', 'Arial', sans-serif;
+  --font:      'Assistant', 'Segoe UI', sans-serif;
 }
 html { scroll-behavior: smooth; }
 body {
@@ -27,6 +28,34 @@ body {
   font-family: var(--font);
   line-height: 1.7;
   direction: rtl;
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(129, 140, 248, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(52, 211, 153, 0.04) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* ── Glass utility ─────────────────────────────────────── */
+.glass {
+  background: rgba(30, 41, 59, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+/* ── Abstract box ──────────────────────────────────────── */
+.abstract-box {
+  padding: 28px 32px;
+  border-right: 4px solid var(--accent);
+  margin-bottom: 0;
+}
+.abstract-box p { font-size: 1.02rem; line-height: 1.75; color: var(--text); }
+.req-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(52,211,153,0.12); color: var(--accent2);
+  padding: 6px 14px; border-radius: 6px;
+  font-weight: 600; font-size: 0.88rem; margin-top: 14px;
 }
 
 /* ── Scroll-reveal animation ───────────────────────────── */
@@ -496,11 +525,9 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
   <a href="#chunking">חלוקה</a>
   <a href="#goldset">קבוצת הזהב</a>
   <a href="#results">תוצאות</a>
-  <a href="#conclusions">מסקנות</a>
+  <a href="#faq">תובנות ו-FAQ</a>
   <a href="#run">הרצה</a>
   <a href="#demo">דמו חי</a>
-  <a href="#embedding-ablation">נספח: הטמעות</a>
-  <a href="#answer-evaluation">הערכת תשובות</a>
 </nav>
 
 <!-- HERO -->
@@ -520,6 +547,18 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
     <a href="https://github.com/dudumrk2/insurance-rag" target="_blank" class="btn btn-outline">GitHub ↗</a>
   </div>
 </div>
+<hr class="divider">
+
+<!-- ABSTRACT -->
+<section id="abstract" style="padding-bottom:40px;">
+  <div class="reveal">
+    <div class="abstract-box glass">
+      <h2 class="section-title">תקציר <span>הפרויקט</span></h2>
+      <p>מערכת Retrieval-Augmented Generation מלאה על קורפוס פוליסות ביטוח ישראליות. הושווו שתי אסטרטגיות חלוקה — <code>fixed_size</code> ו-<code>section_aware</code>. ניסוי ה-Ablation הראה שחלוקה לפי סעיפים מעפילה משמעותית על חלוקה מכנית במדדי Hit@k ו-MRR.</p>
+      <div class="req-badge"><span>✓</span> עומד בדרישות הגשת Mid-Course (קבוצת זהב, Pipeline מלא, מחקר Ablation, ציטוטים מבוססי מקור)</div>
+    </div>
+  </div>
+</section>
 <hr class="divider">
 
 <!-- WHY -->
@@ -582,6 +621,18 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
   <div class="reveal">
     <h2 class="section-title">ארכיטקטורת <span>המערכת</span></h2>
     <p class="section-sub">Pipeline מלא מ-PDF ועד תשובה — 7 שלבים</p>
+    <div class="cards cards-2" style="margin-bottom:28px;">
+      <div class="card glass">
+        <div class="card-icon">🗄️</div>
+        <h3>Multi-tenancy ב-ChromaDB</h3>
+        <p>כל קטע נושא <code>family_id</code>, והשליפה מסננת אוטומטית למניעת דליפת פוליסות בין משפחות, ללא צורך בניהול אינדקסים נפרדים.</p>
+      </div>
+      <div class="card glass">
+        <div class="card-icon">✨</div>
+        <h3>ייצור (Generation)</h3>
+        <p><code>Gemini 2.5 Flash</code> עם <code>temperature=0.2</code>. ה-prompt מחולק לשכבת system ("ענה בעברית בלבד על בסיס ההקשר") ושכבת user עם ההקשר. הטמפרטורה הנמוכה מפחיתה המצאות.</p>
+      </div>
+    </div>
     <div class="pipeline">
       <div class="pipe-step" data-n="1">
         <div class="icon">📄</div>
@@ -606,7 +657,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <div class="pipe-step" data-n="5">
         <div class="icon">🧠</div>
         <h4>e5-large</h4>
-        <p>1024-dim embeddings</p>
+        <p>1024d · gemini-001 כתחליף API</p>
       </div>
       <div class="pipe-step" data-n="6">
         <div class="icon">🗄️</div>
@@ -618,6 +669,10 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
         <h4>Gemini Flash</h4>
         <p>תשובה עם ציטוטים</p>
       </div>
+    </div>
+    <div style="margin-top:20px;text-align:center;color:var(--muted);font-size:0.9rem;">
+      🧪 שלב 5 (ההטמעות) נחקר ב-<a href="#faq" style="color:var(--accent);text-decoration:none;">ניסוי השחלפה</a> —
+      <code>gemini-embedding-001</code> עלה ב-<strong style="color:var(--accent);">+11% Hit@5</strong> בשליפה ו-<strong style="color:var(--accent);">+10% Correctness</strong> בתשובות
     </div>
   </div>
 </section>
@@ -761,11 +816,13 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
 </section>
 <hr class="divider">
 
-<!-- CONCLUSIONS -->
-<section id="conclusions">
+<!-- FAQ / INSIGHTS -->
+<section id="faq">
   <div class="reveal">
-    <h2 class="section-title">מה <span>למדנו</span></h2>
-    <p class="section-sub">שלוש תובנות מרכזיות מהפרויקט</p>
+    <h2 class="section-title">תובנות, מסקנות <span>ושאלות נפוצות</span></h2>
+    <p class="section-sub">כל מה שלמדנו — מהניסוי ועד שאלות עיצוביות</p>
+
+    <!-- Key conclusions -->
     <div class="conclusions">
       <div class="concl-card">
         <div class="concl-icon">🏆</div>
@@ -774,13 +831,159 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       </div>
       <div class="concl-card">
         <div class="concl-icon">🔑</div>
-        <h3>תחיליות e5 — קריטי</h3>
-        <p><code>"passage: "</code> על קטעים ו-<code>"query: "</code> על שאילתות — השמטתן גורמת לירידה מורגשת בלי שגיאה גלויה. טעות שקטה.</p>
+        <h3>אסימטריה בהטמעות = קריטי</h3>
+        <p>גם ב-e5 (תחיליות <code>"passage:"</code>/<code>"query:"</code>) וגם ב-gemini (<code>task_type=DOCUMENT</code>/<code>QUERY</code>) — בלי הבחנה בין מסמך לשאילתה, השליפה צונחת. טעות שקטה.</p>
       </div>
       <div class="concl-card">
         <div class="concl-icon">⚓</div>
         <h3>anchor > chunk_id</h3>
         <p>80 תווים ראשונים כמפתח ציטוט שורדים בין שתי האסטרטגיות — מאפשרים השוואה הוגנת עם אותה קבוצת זהב</p>
+      </div>
+    </div>
+
+    <!-- Embedding ablation -->
+    <div style="margin-top:40px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px 28px;">
+      <h3 style="font-size:1.15rem; margin-bottom:8px; color:var(--text);">השחלפת מודל הטמעות (Gemini vs e5)</h3>
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:20px;">הוחלף <strong>רק</strong> מודל ההטמעות ל-<code>gemini-embedding-001</code> (API, 768d) — שאר ה-pipeline זהה. שני מדדים בלתי-תלויים: <strong>שליפה</strong> (Hit@5, MRR למטה) ו-<strong>תשובות</strong> (10 דגימות ידניות, ראה למטה).</p>
+      <table class="results-table" style="margin-top:0;">
+        <thead><tr><th>מודל</th><th>ממד</th><th>Hit@1</th><th>Hit@3</th><th>Hit@5</th><th>MRR</th></tr></thead>
+        <tbody>
+          <tr class="best"><td>gemini-embedding-001 ⭐</td><td>768</td><td>0.500</td><td>0.740</td><td>0.800</td><td>0.615</td></tr>
+          <tr><td>e5-large (baseline)</td><td>1,024</td><td>—</td><td>—</td><td>0.720</td><td>0.534</td></tr>
+          <tr style="color:var(--accent);font-weight:600;"><td>∆ (שיפור)</td><td>−256</td><td>—</td><td>—</td><td>+0.080</td><td>+0.081</td></tr>
+        </tbody>
+      </table>
+      <div class="bar-chart" style="margin-top:24px;">
+        <h4>Hit@5 — השוואת מודלי הטמעות (אותם קטעים ושאלות)</h4>
+        <div class="bar-row">
+          <div class="bar-label">gemini-001</div>
+          <div class="bar-wrap"><div class="bar-fill accent" style="width:80%">80%</div></div>
+          <div class="bar-val">0.800</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">e5-large</div>
+          <div class="bar-wrap"><div class="bar-fill muted" style="width:72%">72%</div></div>
+          <div class="bar-val">0.720</div>
+        </div>
+      </div>
+      <div class="bar-chart" style="margin-top:20px;">
+        <h4>MRR — השוואת מודלי הטמעות</h4>
+        <div class="bar-row">
+          <div class="bar-label">gemini-001</div>
+          <div class="bar-wrap"><div class="bar-fill accent" style="width:61.5%">0.615</div></div>
+          <div class="bar-val">0.615</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">e5-large</div>
+          <div class="bar-wrap"><div class="bar-fill muted" style="width:53.4%">0.534</div></div>
+          <div class="bar-val">0.534</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Answer evaluation -->
+    <div style="margin-top:32px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px 28px;">
+      <h3 style="font-size:1.15rem; margin-bottom:8px; color:var(--text);">הערכת איכות תשובות (10 דגימות ידניות)</h3>
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:16px;">e5-large baseline מול אותן 10 שאלות עם gemini retrieval — אותו prompt, אותו Flash, השחלפת מודל ההטמעות בלבד.</p>
+      <table class="results-table" style="margin-top:0;margin-bottom:16px;">
+        <thead><tr><th>מודל הטמעות</th><th>Correct</th><th>Incorrect</th><th>Δ</th></tr></thead>
+        <tbody>
+          <tr><td><code>multilingual-e5-large</code> (baseline)</td><td style="color:var(--accent2);font-weight:600;">6/10</td><td style="color:#f87171;font-weight:600;">4/10</td><td>—</td></tr>
+          <tr class="best"><td><code>gemini-embedding-001</code> ⭐</td><td style="color:var(--accent2);font-weight:600;">7/10</td><td style="color:#f87171;font-weight:600;">3/10</td><td style="color:var(--accent);font-weight:600;">+10%</td></tr>
+        </tbody>
+      </table>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;line-height:1.6;">
+        ✨ <strong>שיפור</strong>: Q5 ו-Q6 (פרמיות "שורה בטבלה") עברו מ-Incorrect ל-Correct עם gemini.
+        ⬇️ <strong>רגרסיה</strong>: Q2 (גבול אחריות) — gemini שלף קטע סמנטית-קרוב אבל לא נכון.
+        ↔️ <strong>כשלים משותפים</strong> (Q1, Q4): שורות טבלה לא נשמרות ב-<code>section_aware</code> — מגבלת <em>chunking</em>, לא embedding.
+      </p>
+
+      <!-- Spotlight: actual gemini answers (the wins + the regression) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;margin-bottom:24px;">
+        <!-- Improvements -->
+        <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:var(--radius);padding:20px 22px;">
+          <h4 style="color:var(--accent2);font-size:1rem;margin-bottom:14px;">🎯 איפה gemini שינה תשובה לטובה</h4>
+
+          <div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(52,211,153,0.15);">
+            <p style="font-size:0.85rem;color:var(--text);margin-bottom:8px;"><strong>Q5</strong> — מהי הפרמיה השנתית עבור כיסוי לפנסים ומראות צד?</p>
+            <p style="font-size:0.82rem;color:#f87171;margin-bottom:4px;line-height:1.5;">🔴 <strong>e5:</strong> "המודל לא מצא את הפרמיה"</p>
+            <p style="font-size:0.82rem;color:var(--accent2);line-height:1.5;">🟢 <strong>gemini:</strong> "הפרמיה השנתית עבור כיסוי לפנסים ומראות צד היא <strong>58 ש״ח</strong>" ✓</p>
+          </div>
+
+          <div>
+            <p style="font-size:0.85rem;color:var(--text);margin-bottom:8px;"><strong>Q6</strong> — מהי הפרמיה עבור שירותי גרירה הכלולים בביטוח צד ג'?</p>
+            <p style="font-size:0.82rem;color:#f87171;margin-bottom:4px;line-height:1.5;">🔴 <strong>e5:</strong> "המודל אמר אין פרמיה נפרדת"</p>
+            <p style="font-size:0.82rem;color:var(--accent2);line-height:1.5;">🟢 <strong>gemini:</strong> "הפרמיה עבור שירותי גרירה הכלולים בביטוח צד ג' היא <strong>274 ש״ח</strong>" ✓</p>
+          </div>
+        </div>
+
+        <!-- Regression -->
+        <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius);padding:20px 22px;">
+          <h4 style="color:#f87171;font-size:1rem;margin-bottom:14px;">⬇️ איפה gemini דווקא טעה</h4>
+
+          <p style="font-size:0.85rem;color:var(--text);margin-bottom:8px;"><strong>Q2</strong> — מהו גבול האחריות המקסימלי לביטוח אחריות כלפי צד שלישי בגין נזקי רכוש?</p>
+          <p style="font-size:0.82rem;color:var(--accent2);margin-bottom:4px;line-height:1.5;">🟢 <strong>e5:</strong> "<strong>2,833,953 ש״ח</strong>" ✓ (שלף את הטבלה הראשית)</p>
+          <p style="font-size:0.82rem;color:#f87171;margin-bottom:10px;line-height:1.5;">🔴 <strong>gemini:</strong> "600,000 ש״ח למקרה ביטוח; 1,200,000 ש״ח לכל מקרי הביטוח" — שלף את <em>טבלת גבולות הפיצויים</em>, שדה סמנטית-קרוב אך לא הנכון.</p>
+          <p style="font-size:0.78rem;color:var(--muted);font-style:italic;line-height:1.5;border-top:1px solid rgba(248,113,113,0.15);padding-top:10px;margin-top:10px;">לקח: גם semantic search חזק יכול ליפול כשיש מספר טבלאות סמנטית-קרובות באותו מסמך. שני המספרים נכונים-לעצמם — אבל לא רלוונטיים לשאלה.</p>
+        </div>
+      </div>
+
+      <div class="conclusions" style="margin-top:16px;">
+        <div class="concl-card">
+          <div class="concl-icon">💪</div>
+          <h3>חוזקות</h3>
+          <p>שני המודלים מתפקדים טוב על שאלות עובדתיות וחוזיות מסובכות (5/5 ב-Q3, Q7-Q10)</p>
+        </div>
+        <div class="concl-card">
+          <div class="concl-icon">⚠️</div>
+          <h3>חולשות שנותרו</h3>
+          <p>גם עם gemini, Q1+Q4 (חילוץ שורה מטבלה) עדיין נכשלים — קטעי <code>section_aware</code> חתוכים בגובה הכותרת ולא שומרים שורות טבלה</p>
+        </div>
+        <div class="concl-card">
+          <div class="concl-icon">🔮</div>
+          <h3>הצעד הבא</h3>
+          <p>gemini כבר נתן +10%. <strong>Hybrid retrieval</strong> (BM25 + dense) או <strong>table-aware chunking</strong> יכולים לתפוס את שורות הטבלה הנותרות</p>
+        </div>
+      </div>
+      <details style="margin-top:24px;">
+        <summary style="cursor:pointer;color:var(--accent);font-size:0.9rem;padding:8px 0;user-select:none;">📋 הצג פירוט מלא של 10 הדגימות (e5 vs gemini)</summary>
+        <table class="results-table" style="font-size:0.78rem;margin-top:12px;">
+          <thead><tr><th>#</th><th>קטגוריה</th><th>e5</th><th>gemini</th><th>הערה</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>numerical (השתתפות עצמית)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>e5 אמר "0" (המצאה); gemini אמר "לא במפרט" — שניהם פספסו את 90 ש"ח</td></tr>
+            <tr><td>2</td><td>numerical (גבול אחריות)</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td style="color:#f87171;font-weight:600;">Incorrect ⬇️</td><td>e5: 2,833,953 ✓ &nbsp;|&nbsp; gemini שלף קטע אחר (600K/1.2M) — רגרסיה</td></tr>
+            <tr class="best"><td>3</td><td>factual (תנאי נהיגה)</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>גיל 21+, רישיון 1+ שנה</td></tr>
+            <tr><td>4</td><td>numerical (סכום ביטוח ארנק)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>שניהם לא מצאו את 1,133 ש"ח — נמצא בשורת טבלה שאבדה ב-chunking</td></tr>
+            <tr><td>5</td><td>numerical (פרמיה פנסים)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td style="color:var(--accent2);font-weight:600;">Correct ⬆️</td><td>gemini זיהה את 58 ש"ח ✓ &nbsp;|&nbsp; e5 לא מצא — <strong>שיפור</strong></td></tr>
+            <tr><td>6</td><td>numerical (פרמיה גרירה)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td style="color:var(--accent2);font-weight:600;">Correct ⬆️</td><td>gemini זיהה את 274 ש"ח ✓ &nbsp;|&nbsp; e5 לא מצא — <strong>שיפור</strong></td></tr>
+            <tr class="best"><td>7</td><td>factual (רכב חלופי)</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>תשובה מקיפה על תנאי הרכב החלופי</td></tr>
+            <tr class="best"><td>8</td><td>factual (סיוע תביעה)</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>התאמה מדויקת של התנאי המוקדם</td></tr>
+            <tr class="best"><td>9</td><td>factual (השלכות מידע)</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>תשובה מפורטת על ההשלכות</td></tr>
+            <tr class="best"><td>10</td><td>factual (AIG keys)</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>התאמה מדויקת</td></tr>
+          </tbody>
+          <tfoot>
+            <tr style="font-weight:700;border-top:2px solid var(--border);">
+              <td colspan="2">סך הכל</td>
+              <td style="color:var(--accent2);">6/10</td>
+              <td style="color:var(--accent2);">7/10</td>
+              <td>net +1 (Q5+Q6 שיפרו, Q2 רגרסיה)</td>
+            </tr>
+          </tfoot>
+        </table>
+      </details>
+    </div>
+
+    <!-- FAQ cards -->
+    <div class="cards cards-2" style="margin-top:32px;">
+      <div class="card">
+        <div class="card-icon">🤖</div>
+        <h3>איזה מודל הטמעות בפועל?</h3>
+        <p>ה-baseline האקדמי הוא <code>multilingual-e5-large</code> (מקומי, open-source, מאפשר reproducibility). בניסוי השחלפה הוכח ש-<code>gemini-embedding-001</code> (API, 768d) משפר ב-<strong>+11% Hit@5</strong> בשליפה <strong>וגם +10% Correctness</strong> בתשובות — שני מדדים בלתי-תלויים. יישומית: gemini ל-production, e5 כ-baseline שמיר ופרטי.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⏱️</div>
+        <h3>זמני ריצה בפועל</h3>
+        <p>Docling ~3 דקות · בניית אינדקס ~8 דקות (CPU) · ניסוי Ablation מלא ~50 דקות</p>
       </div>
     </div>
   </div>
@@ -880,128 +1083,6 @@ print('מקורות:', result['sources'])
           <span class="sug-q" onclick="fillQ(this)">מה מכסה ביטוח הדירה לנזקי מים?</span>
           <span class="sug-q" onclick="fillQ(this)">מהו סכום הפיצוי לאחר ניתוח מורכב?</span>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider">
-
-<!-- EMBEDDING ABLATION APPENDIX -->
-<section id="embedding-ablation">
-  <div class="reveal">
-    <h2 class="section-title">נספח: השחלפת <span>מודל ההטמעות</span></h2>
-    <p class="section-sub">gemini-embedding-001 לעומת e5-large — אותם 447 קטעים, 50 שאלות</p>
-    <p style="color:var(--muted);font-size:0.92rem;margin-bottom:28px;line-height:1.7;">
-      ניסוי עצמאי שבוצע לאחר השלמת הפרויקט האקדמי, לצורך תכנון האינטגרציה ב-<code>ai-wealth-monitor</code>.
-      החלפנו <strong>רק</strong> את מודל ההטמעות: במקום <code>multilingual-e5-large</code> (מקומי, ~3GB, 1024d)
-      השתמשנו ב-<code>gemini-embedding-001</code> (API, 768d).
-      במקום תחיליות <code>"passage: "</code> / <code>"query: "</code> של e5,
-      הגדרנו <code>task_type=RETRIEVAL_DOCUMENT</code> לקטעים ו-<code>RETRIEVAL_QUERY</code> לשאלות.
-      שאר ה-pipeline — 447 קטעי section_aware, 50 שאלות הזהב, חישוב cosine — נשאר זהה לחלוטין.
-      ראה: <code>eval/run_eval_gemini.py</code>
-    </p>
-    <table class="results-table">
-      <thead><tr><th>מודל</th><th>ממד</th><th>Hit@1</th><th>Hit@3</th><th>Hit@5</th><th>MRR</th></tr></thead>
-      <tbody>
-        <tr class="best"><td>gemini-embedding-001 ⭐</td><td>768</td><td>0.500</td><td>0.740</td><td>0.800</td><td>0.615</td></tr>
-        <tr><td>e5-large (baseline)</td><td>1,024</td><td>—</td><td>—</td><td>0.720</td><td>0.534</td></tr>
-        <tr style="color:var(--accent);font-weight:600;"><td>∆ (gemini − e5)</td><td>−256</td><td>—</td><td>—</td><td>+0.080</td><td>+0.081</td></tr>
-      </tbody>
-    </table>
-    <div class="bar-chart">
-      <h4>Hit@5 — השוואת מודלי הטמעות (אותם קטעים ושאלות)</h4>
-      <div class="bar-row">
-        <div class="bar-label">gemini-001</div>
-        <div class="bar-wrap"><div class="bar-fill accent" style="width:80%">80%</div></div>
-        <div class="bar-val">0.800</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label">e5-large</div>
-        <div class="bar-wrap"><div class="bar-fill muted" style="width:72%">72%</div></div>
-        <div class="bar-val">0.720</div>
-      </div>
-    </div>
-    <div class="bar-chart" style="margin-top:24px;">
-      <h4>MRR — השוואת מודלי הטמעות</h4>
-      <div class="bar-row">
-        <div class="bar-label">gemini-001</div>
-        <div class="bar-wrap"><div class="bar-fill accent" style="width:61.5%">0.615</div></div>
-        <div class="bar-val">0.615</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label">e5-large</div>
-        <div class="bar-wrap"><div class="bar-fill muted" style="width:53.4%">0.534</div></div>
-        <div class="bar-val">0.534</div>
-      </div>
-    </div>
-    <div class="conclusions" style="margin-top:36px;">
-      <div class="concl-card">
-        <div class="concl-icon">🚀</div>
-        <h3>+11% Hit@5</h3>
-        <p>מודל ענן עם 768 ממדים מציג שליפה טובה יותר ממודל מקומי של 1024 ממדים על טקסט עברית</p>
-      </div>
-      <div class="concl-card">
-        <div class="concl-icon">💡</div>
-        <h3>task_type חשוב</h3>
-        <p><code>RETRIEVAL_DOCUMENT</code> לקטעים ו-<code>RETRIEVAL_QUERY</code> לשאלות — אותו עיקרון כמו תחיליות e5, אחרת השליפה נפגעת</p>
-      </div>
-      <div class="concl-card">
-        <div class="concl-icon">⚡</div>
-        <h3>בלי torch מקומי</h3>
-        <p>לאינטגרציה בסביבת ענן רזה — ללא sentence-transformers, ללא ~3GB של משקל מודל, רק קריאת API</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider">
-
-<!-- ANSWER EVALUATION SECTION -->
-<section id="answer-evaluation">
-  <div class="reveal">
-    <h2 class="section-title">הערכת איכות <span>תשובות</span></h2>
-    <p class="section-sub">10 תשובות נבדקו ידנית מול קבוצת הזהב</p>
-    <table class="results-table" style="font-size:0.85rem;">
-      <thead><tr><th>#</th><th>סוג שאלה</th><th>סיווג</th><th>הערה</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>מספרי (דמי השתתפות)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>מודל אמר 0, אך התשובה הצפויה היא 90 ש״ח</td></tr>
-        <tr class="best"><td>2</td><td>מספרי (גבול אחריות)</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>התאמה מדויקת: 2,833,953 ש״ח</td></tr>
-        <tr class="best"><td>3</td><td>תנאי / עובדתי</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>כל התנאים התאימו (גיל 21+, רישיון 1+ שנה)</td></tr>
-        <tr><td>4</td><td>מספרי (סכום ביטוח)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>המודל אמר שהמידע לא זמין, אך התשובה היא 1,133 ש״ח</td></tr>
-        <tr><td>5</td><td>מספרי (פרמיה)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>המודל אמר שלא מצא את הפרמיה, אך התשובה היא 58 ש״ח</td></tr>
-        <tr><td>6</td><td>מספרי (פרמיה)</td><td style="color:#f87171;font-weight:600;">Incorrect</td><td>המודל אמר אין פרמיה נפרדת, אך התשובה הצפויה היא 274 ש״ח</td></tr>
-        <tr class="best"><td>7</td><td>תנאים מורכבים</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>תשובה מקיפה וערוכה היטב על תנאי הרכב החלופי</td></tr>
-        <tr class="best"><td>8</td><td>עובדתי</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>התאמה מדויקת של התנאי המוקדם</td></tr>
-        <tr class="best"><td>9</td><td>השלכות חוזיות</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>תשובה מפורטת וכוללת על ההשלכות של מידע לא כנה</td></tr>
-        <tr class="best"><td>10</td><td>עובדתי</td><td style="color:var(--accent2);font-weight:600;">Correct</td><td>התאמה מדויקת</td></tr>
-      </tbody>
-    </table>
-
-    <div style="margin-top:32px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
-      <div class="stat-chip" style="background:rgba(52,211,153,0.1);border-color:var(--accent2);">
-        <span class="val" style="color:var(--accent2);">6</span><span class="lbl">Correct</span>
-      </div>
-      <div class="stat-chip" style="background:rgba(248,113,113,0.1);border-color:#f87171;">
-        <span class="val" style="color:#f87171;">4</span><span class="lbl">Incorrect</span>
-      </div>
-    </div>
-
-    <div class="conclusions" style="margin-top:36px;">
-      <div class="concl-card">
-        <div class="concl-icon">💪</div>
-        <h3>חוזקות</h3>
-        <p>המודל מתפקד טוב על שאלות עובדתיות וחוזיות מסובכות — יכול להשחזר מרובות קטעים ולשלב אותם לתשובה ממוקדת</p>
-      </div>
-      <div class="concl-card">
-        <div class="concl-icon">⚠️</div>
-        <h3>חולשות</h3>
-        <p>בתשימות מספריות (דמים, תעריפים), המודל מראה קצב חזוויר נמוך (40%) — אולי בגלל שליפה חלשה או מודל הטמעות</p>
-      </div>
-      <div class="concl-card">
-        <div class="concl-icon">🔮</div>
-        <h3>שיפור עתידי</h3>
-        <p>שילוב שליפה היברידית (BM25 + וקטורית) יכול לשפר שאלות מספריות, כי BM25 תופסת התאמה מילולית מדויקת</p>
       </div>
     </div>
   </div>
