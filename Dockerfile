@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Python dependencies — CPU-only torch to keep image lean
 RUN pip install --no-cache-dir \
-    torch==2.2.2 --index-url https://download.pytorch.org/whl/cpu
+    torch --index-url https://download.pytorch.org/whl/cpu
 
 RUN pip install --no-cache-dir \
     sentence-transformers>=3.0 \
@@ -19,14 +19,21 @@ RUN pip install --no-cache-dir \
     flask-cors>=4.0 \
     python-dotenv>=1.0
 
-# Copy source code and assets
+# Copy source and pre-download the embedding model into its own layer.
+# This layer is cached — subsequent rebuilds skip the ~1.2 GB download
+# as long as src/ and the pip layers above are unchanged.
 COPY src/ ./src/
-COPY docs/ ./docs/
-COPY indices/ ./indices/
-COPY server.py .
-
-# Pre-download the embedding model into the image layer (avoids cold-start download)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-large')"
+
+# Copy pre-chunked data (committed to repo) and build ChromaDB indices.
+# indices/ is gitignored — we build it here instead of copying it.
+COPY data/processed/ ./data/processed/
+COPY build_index.py .
+RUN python build_index.py
+
+# Copy remaining static assets
+COPY docs/ ./docs/
+COPY server.py .
 
 EXPOSE 8080
 
