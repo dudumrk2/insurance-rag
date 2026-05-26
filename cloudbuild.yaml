@@ -1,8 +1,18 @@
 steps:
-  # Build the container image
+  # Pull the previous image to use as layer cache.
+  # "|| true" so the first-ever build doesn't fail when there's no image yet.
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest || true']
+
+  # Build — reuse cached layers from the previous image.
+  # When only docs/ or server.py change, the torch/model/indices layers
+  # come from cache and the build takes ~2 min instead of ~20 min.
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - build
+      - --cache-from
+      - us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
       - -t
       - us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
       - .
@@ -13,7 +23,8 @@ steps:
       - push
       - us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
 
-  # Deploy to Cloud Run
+  # Deploy to Cloud Run.
+  # GEMINI_API_KEY is already configured on the service — don't touch it here.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -29,7 +40,6 @@ steps:
       - --min-instances=1
       - --max-instances=3
       - --port=8080
-      - --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest
 
 images:
   - us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
