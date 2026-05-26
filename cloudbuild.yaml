@@ -29,7 +29,6 @@ steps:
       - --min-instances=1
       - --max-instances=3
       - --port=8080
-      - --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest
 
 images:
   - us-central1-docker.pkg.dev/$PROJECT_ID/insurance-rag/app:latest
