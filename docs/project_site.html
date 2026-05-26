@@ -499,6 +499,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
   <a href="#conclusions">מסקנות</a>
   <a href="#run">הרצה</a>
   <a href="#demo">דמו חי</a>
+  <a href="#embedding-ablation">נספח: הטמעות</a>
 </nav>
 
 <!-- HERO -->
@@ -878,6 +879,76 @@ print('מקורות:', result['sources'])
           <span class="sug-q" onclick="fillQ(this)">מה מכסה ביטוח הדירה לנזקי מים?</span>
           <span class="sug-q" onclick="fillQ(this)">מהו סכום הפיצוי לאחר ניתוח מורכב?</span>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- EMBEDDING ABLATION APPENDIX -->
+<section id="embedding-ablation">
+  <div class="reveal">
+    <h2 class="section-title">נספח: השחלפת <span>מודל ההטמעות</span></h2>
+    <p class="section-sub">gemini-embedding-001 לעומת e5-large — אותם 447 קטעים, 50 שאלות</p>
+    <p style="color:var(--muted);font-size:0.92rem;margin-bottom:28px;line-height:1.7;">
+      ניסוי עצמאי שבוצע לאחר השלמת הפרויקט האקדמי, לצורך תכנון האינטגרציה ב-<code>ai-wealth-monitor</code>.
+      החלפנו <strong>רק</strong> את מודל ההטמעות: במקום <code>multilingual-e5-large</code> (מקומי, ~3GB, 1024d)
+      השתמשנו ב-<code>gemini-embedding-001</code> (API, 768d).
+      במקום תחיליות <code>"passage: "</code> / <code>"query: "</code> של e5,
+      הגדרנו <code>task_type=RETRIEVAL_DOCUMENT</code> לקטעים ו-<code>RETRIEVAL_QUERY</code> לשאלות.
+      שאר ה-pipeline — 447 קטעי section_aware, 50 שאלות הזהב, חישוב cosine — נשאר זהה לחלוטין.
+      ראה: <code>eval/run_eval_gemini.py</code>
+    </p>
+    <table class="results-table">
+      <thead><tr><th>מודל</th><th>ממד</th><th>Hit@1</th><th>Hit@3</th><th>Hit@5</th><th>MRR</th></tr></thead>
+      <tbody>
+        <tr class="best"><td>gemini-embedding-001 ⭐</td><td>768</td><td>0.500</td><td>0.740</td><td>0.800</td><td>0.615</td></tr>
+        <tr><td>e5-large (baseline)</td><td>1,024</td><td>—</td><td>—</td><td>0.720</td><td>0.534</td></tr>
+        <tr style="color:var(--accent);font-weight:600;"><td>∆ (gemini − e5)</td><td>−256</td><td>—</td><td>—</td><td>+0.080</td><td>+0.081</td></tr>
+      </tbody>
+    </table>
+    <div class="bar-chart">
+      <h4>Hit@5 — השוואת מודלי הטמעות (אותם קטעים ושאלות)</h4>
+      <div class="bar-row">
+        <div class="bar-label">gemini-001</div>
+        <div class="bar-wrap"><div class="bar-fill accent" style="width:80%">80%</div></div>
+        <div class="bar-val">0.800</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">e5-large</div>
+        <div class="bar-wrap"><div class="bar-fill muted" style="width:72%">72%</div></div>
+        <div class="bar-val">0.720</div>
+      </div>
+    </div>
+    <div class="bar-chart" style="margin-top:24px;">
+      <h4>MRR — השוואת מודלי הטמעות</h4>
+      <div class="bar-row">
+        <div class="bar-label">gemini-001</div>
+        <div class="bar-wrap"><div class="bar-fill accent" style="width:61.5%">0.615</div></div>
+        <div class="bar-val">0.615</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">e5-large</div>
+        <div class="bar-wrap"><div class="bar-fill muted" style="width:53.4%">0.534</div></div>
+        <div class="bar-val">0.534</div>
+      </div>
+    </div>
+    <div class="conclusions" style="margin-top:36px;">
+      <div class="concl-card">
+        <div class="concl-icon">🚀</div>
+        <h3>+11% Hit@5</h3>
+        <p>מודל ענן עם 768 ממדים מציג שליפה טובה יותר ממודל מקומי של 1024 ממדים על טקסט עברית</p>
+      </div>
+      <div class="concl-card">
+        <div class="concl-icon">💡</div>
+        <h3>task_type חשוב</h3>
+        <p><code>RETRIEVAL_DOCUMENT</code> לקטעים ו-<code>RETRIEVAL_QUERY</code> לשאלות — אותו עיקרון כמו תחיליות e5, אחרת השליפה נפגעת</p>
+      </div>
+      <div class="concl-card">
+        <div class="concl-icon">⚡</div>
+        <h3>בלי torch מקומי</h3>
+        <p>לאינטגרציה בסביבת ענן רזה — ללא sentence-transformers, ללא ~3GB של משקל מודל, רק קריאת API</p>
       </div>
     </div>
   </div>
