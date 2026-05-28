@@ -630,7 +630,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <div class="card glass">
         <div class="card-icon">✨</div>
         <h3>ייצור (Generation)</h3>
-        <p><code>Gemini 2.5 Flash</code> עם <code>temperature=0.2</code>. ה-prompt מחולק לשכבת system ("ענה בעברית בלבד על בסיס ההקשר") ושכבת user עם ההקשר. הטמפרטורה הנמוכה מפחיתה המצאות.</p>
+        <p><code>Gemini 2.5 Flash</code> עם <code>temperature=0.2</code>. ה-prompt מחולק לשכבת system ("ענה בעברית בלבד על בסיס ההקשר") ושכבת user עם ההקשר. המקורות המוחזרים הם anchors של הקטעים שנשלפו, לא citations שהמודל בחר.</p>
       </div>
     </div>
     <div class="pipeline">
@@ -667,7 +667,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <div class="pipe-step" data-n="7">
         <div class="icon">✨</div>
         <h4>Gemini Flash</h4>
-        <p>תשובה עם ציטוטים</p>
+        <p>תשובה + anchors שנשלפו</p>
       </div>
     </div>
     <div style="margin-top:20px;text-align:center;color:var(--muted);font-size:0.9rem;">
@@ -686,7 +686,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
     <div class="chunk-compare">
       <div class="chunk-box bad">
         <h4>fixed_size</h4>
-        <span class="tag tag-bad">944 קטעים • 500 tokens</span>
+        <span class="tag tag-bad">944 קטעים • 500 תווים</span>
         <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">חותך בגבול שרירותי — גורם לפיצול סעיפים באמצע</p>
         <div class="chunk-text">...תנאים נוספים לפוליסה.
 
@@ -698,7 +698,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       </div>
       <div class="chunk-box good">
         <h4>section_aware</h4>
-        <span class="tag tag-good">447 קטעים • ≤700 tokens</span>
+        <span class="tag tag-good">447 קטעים • ≤2,800 תווים</span>
         <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">חותך בגבולות כותרת — כל קטע = יחידה סמנטית שלמה</p>
         <div class="chunk-text"><mark>## שירות מתן רכב חלופי</mark>
 
@@ -896,7 +896,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;line-height:1.6;">
         ✨ <strong>שיפור</strong>: Q5 ו-Q6 (פרמיות "שורה בטבלה") עברו מ-Incorrect ל-Correct עם gemini.
         ⬇️ <strong>רגרסיה</strong>: Q2 (גבול אחריות) — gemini שלף קטע סמנטית-קרוב אבל לא נכון.
-        ↔️ <strong>כשלים משותפים</strong> (Q1, Q4): שורות טבלה לא נשמרות ב-<code>section_aware</code> — מגבלת <em>chunking</em>, לא embedding.
+        ↔️ <strong>כשלים משותפים</strong> (Q1, Q4): ערכים מספריים בתוך טבלאות לא נשלפו במדויק ב-<code>section_aware</code> — מגבלת <em>chunking</em>, לא embedding.
       </p>
 
       <!-- Spotlight: actual gemini answers (the wins + the regression) -->
@@ -938,7 +938,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
         <div class="concl-card">
           <div class="concl-icon">⚠️</div>
           <h3>חולשות שנותרו</h3>
-          <p>גם עם gemini, Q1+Q4 (חילוץ שורה מטבלה) עדיין נכשלים — קטעי <code>section_aware</code> חתוכים בגובה הכותרת ולא שומרים שורות טבלה</p>
+          <p>גם עם gemini, Q1+Q4 (ערכים מספריים מתוך טבלאות) עדיין נכשלים — קטעי <code>section_aware</code> חתוכים בגובה הכותרת ולא יוצרים שורות טבלה כיחידות שליפה עצמאיות</p>
         </div>
         <div class="concl-card" style="border-color:rgba(129,140,248,0.35);">
           <div class="concl-icon">🔮</div>

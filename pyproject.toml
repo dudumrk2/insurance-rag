@@ -20,16 +20,20 @@ pdf = ["docling>=2.0"]
 embeddings = ["sentence-transformers>=3.0", "torch>=2.2"]
 vectorstore = ["chromadb>=0.5"]
 generation = ["google-genai>=0.8"]
-goldset = ["anthropic>=0.40"]
+goldset = ["google-genai>=0.8"]
 server = ["flask>=3.0", "flask-cors>=4.0"]
-dev = ["pytest>=8.0", "python-dotenv>=1.0"]
+dev = [
+    "pytest>=8.0",
+    "python-dotenv>=1.0",
+    "flask>=3.0",
+    "flask-cors>=4.0",
+]
 all = [
     "docling>=2.0",
     "sentence-transformers>=3.0",
     "torch>=2.2",
     "chromadb>=0.5",
     "google-genai>=0.8",
-    "anthropic>=0.40",
     "flask>=3.0",
     "flask-cors>=4.0",
     "pytest>=8.0",

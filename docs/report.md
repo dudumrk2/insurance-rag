@@ -63,7 +63,7 @@ PDF
                               ┌─────────────────────┤
                               ▼                     ▼
                          chunk_fixed         chunk_section_aware
-                         (500/300/700)        (≤700 tokens/section)
+                         (500/300/700 chars)  (≤2,800 chars/section)
                               │                     │
                               └──────────┬──────────┘
                                          ▼
@@ -82,7 +82,7 @@ PDF
                               (Hebrew system prompt, T=0.2)
                                          │
                                          ▼
-                              answer + citations (anchors)
+                              answer + retrieved anchors
 ```
 
 </div>
@@ -398,7 +398,7 @@ pdf        = ["docling>=2.0"]
 embeddings = ["sentence-transformers>=3.0", "torch>=2.2"]
 vectorstore= ["chromadb>=0.5"]
 generation = ["google-genai>=0.8"]
-dev        = ["pytest>=8.0", "python-dotenv>=1.0"]
+dev        = ["pytest>=8.0", "python-dotenv>=1.0", "flask>=3.0", "flask-cors>=4.0"]
 all        = [...]   # הכל ביחד
 ```
 
