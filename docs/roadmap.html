@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מפת דרכים — שיפור מערכת RAG</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #0f172a;
+  --bg-card:   #1e293b;
+  --bg-card2:  #273549;
+  --accent:    #818cf8;
+  --accent2:   #34d399;
+  --accent3:   #f472b6;
+  --warn:      #fb923c;
+  --text:      #f1f5f9;
+  --muted:     #94a3b8;
+  --border:    #334155;
+  --radius:    12px;
+  --font:      'Assistant', 'Segoe UI', sans-serif;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.7;
+  direction: rtl;
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(129,140,248,0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(52,211,153,0.04) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Nav */
+nav {
+  position: fixed; top: 0; right: 0; left: 0; z-index: 100;
+  background: rgba(15,23,42,0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 32px;
+}
+.nav-title { color: var(--muted); font-size: 0.85rem; }
+nav a {
+  color: var(--accent); text-decoration: none; font-size: 0.85rem;
+  padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(129,140,248,0.3);
+  transition: all 0.2s;
+}
+nav a:hover { background: rgba(129,140,248,0.1); }
+
+/* Layout */
+section { max-width: 1000px; margin: 0 auto; padding: 72px 32px; }
+section:first-of-type { padding-top: 120px; }
+
+/* Hero */
+.hero-tag {
+  display: inline-block;
+  background: rgba(129,140,248,0.15); color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.3);
+  border-radius: 20px; padding: 6px 18px;
+  font-size: 0.85rem; margin-bottom: 24px; letter-spacing: 0.05em;
+}
+.hero-title {
+  font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.2;
+  margin-bottom: 20px;
+  background: linear-gradient(90deg, #f1f5f9, #818cf8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero-sub { color: var(--muted); font-size: 1.1rem; max-width: 680px; margin-bottom: 36px; }
+
+/* Status bar */
+.status-bar {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 48px;
+}
+.status-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 20px; font-size: 0.9rem;
+}
+.status-chip .val { font-weight: 700; font-size: 1.3rem; color: var(--accent); }
+.status-chip.warn .val { color: var(--warn); }
+.status-chip.ok .val { color: var(--accent2); }
+
+/* Section titles */
+.section-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.section-title { font-size: 1.7rem; font-weight: 700; margin-bottom: 8px; }
+.section-title span { color: var(--accent); }
+.section-sub { color: var(--muted); font-size: 0.97rem; margin-bottom: 32px; }
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+/* Layer label */
+.layer-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 6px; padding: 4px 12px; font-size: 0.8rem; font-weight: 600; margin-bottom: 20px;
+}
+.layer-1 { background: rgba(52,211,153,0.12); color: var(--accent2); border: 1px solid rgba(52,211,153,0.25); }
+.layer-2 { background: rgba(129,140,248,0.12); color: var(--accent); border: 1px solid rgba(129,140,248,0.25); }
+.layer-3 { background: rgba(251,146,60,0.12); color: var(--warn); border: 1px solid rgba(251,146,60,0.25); }
+
+/* Improvement cards */
+.improve-grid { display: grid; gap: 16px; }
+.improve-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px 28px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.improve-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.improve-card .accent-bar {
+  position: absolute; top: 0; right: 0; width: 3px; height: 100%;
+  background: var(--accent);
+}
+.improve-card .accent-bar.green { background: var(--accent2); }
+.improve-card .accent-bar.orange { background: var(--warn); }
+.improve-card-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.improve-card h3 { font-size: 1.1rem; font-weight: 700; }
+.effort-tag {
+  font-size: 0.75rem; padding: 3px 10px; border-radius: 12px; white-space: nowrap;
+  flex-shrink: 0; margin-right: 12px;
+}
+.effort-hour { background: rgba(52,211,153,0.15); color: var(--accent2); }
+.effort-day  { background: rgba(129,140,248,0.15); color: var(--accent); }
+.effort-week { background: rgba(251,146,60,0.15);  color: var(--warn); }
+.improve-card p { color: var(--muted); font-size: 0.92rem; margin-bottom: 14px; }
+.impact-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.impact-pill {
+  font-size: 0.78rem; padding: 3px 10px; border-radius: 10px;
+  background: rgba(129,140,248,0.1); color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.2);
+}
+.impact-pill.green { background: rgba(52,211,153,0.1); color: var(--accent2); border-color: rgba(52,211,153,0.2); }
+.impact-pill.red   { background: rgba(248,113,113,0.1); color: #f87171; border-color: rgba(248,113,113,0.2); }
+
+/* Code block */
+.code-block {
+  background: #0d1929; border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px 20px; margin-top: 12px; overflow-x: auto;
+}
+.code-block pre { font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: 0.82rem; color: #a5b4fc; line-height: 1.6; white-space: pre; }
+.code-block .cm { color: #475569; }
+.code-block .kw { color: #818cf8; }
+.code-block .fn { color: #34d399; }
+.code-block .st { color: #fb7185; }
+.code-block .nm { color: #fbbf24; }
+
+/* Before/after */
+.diff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.diff-box { border-radius: 8px; padding: 14px 16px; font-size: 0.85rem; }
+.diff-before { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); }
+.diff-after  { background: rgba(52,211,153,0.08);  border: 1px solid rgba(52,211,153,0.25); }
+.diff-label  { font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; opacity: 0.7; }
+
+/* Priority table */
+.priority-table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+.priority-table th {
+  background: var(--bg-card2); padding: 12px 16px; text-align: right;
+  font-size: 0.83rem; color: var(--muted); border-bottom: 1px solid var(--border);
+}
+.priority-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+.priority-table tr:last-child td { border-bottom: none; }
+.priority-table tr:hover td { background: rgba(255,255,255,0.02); }
+.prio-high   { color: var(--accent2); font-weight: 700; }
+.prio-medium { color: var(--accent); }
+.prio-arch   { color: var(--warn); }
+code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7px; border-radius: 4px; font-size: 0.85em; }
+
+/* Scroll reveal */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* Failure spotlight */
+.fail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 24px 0; }
+.fail-card {
+  background: rgba(248,113,113,0.06); border: 1px solid rgba(248,113,113,0.2);
+  border-radius: 10px; padding: 16px 18px;
+}
+.fail-card .fail-id { font-size: 0.78rem; color: #f87171; font-weight: 700; margin-bottom: 4px; }
+.fail-card .fail-q  { font-size: 0.88rem; margin-bottom: 8px; }
+.fail-card .fail-why { font-size: 0.8rem; color: var(--muted); }
+
+/* Back btn */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text); text-decoration: none;
+  padding: 12px 24px; border-radius: 8px; font-size: 0.9rem;
+  transition: all 0.2s; margin-top: 8px;
+}
+.back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (max-width: 700px) {
+  .diff-row { grid-template-columns: 1fr; }
+  .fail-grid { grid-template-columns: 1fr; }
+  .status-bar { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-title">מערכת RAG — פוליסות ביטוח</span>
+  <a href="project_site.html">← חזרה לאתר הראשי</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ HERO ══ -->
+<section>
+  <div class="reveal">
+    <div class="hero-tag">🔮 מפת דרכים</div>
+    <h1 class="hero-title">משיפור ל-7/10 לדיוק גבוה יותר</h1>
+    <p class="hero-sub">
+      המערכת מגיעה ל-7 תשובות נכונות מתוך 10 עם <code>gemini-embedding-001</code>.
+      שלושת הכשלים הם לא מקריים — כולם שאלות מספריות מתוך טבלאות.
+      הדף הזה מסביר מדוע, ומפרט ארבעה נתיבים לשיפור לפי עלות–תועלת.
+    </p>
+    <div class="status-bar">
+      <div class="status-chip ok"><span class="val">7/10</span><span>תשובות נכונות (Gemini embedding)</span></div>
+      <div class="status-chip warn"><span class="val">3</span><span>כשלים — כולם טבלאות מספריות</span></div>
+      <div class="status-chip"><span class="val">Hit@5 0.80</span><span>שליפה (Gemini)</span></div>
+    </div>
+  </div>
+
+  <!-- Failure analysis -->
+  <div class="reveal">
+    <h2 class="section-title">מה נשבר בדיוק — <span>ניתוח שלושת הכשלים</span></h2>
+    <p class="section-sub">כל שלושת הכשלים שיתפים: המידע <em>קיים</em> בפוליסה, אבל השיטה הנוכחית לא מצליחה לחלץ אותו בצורה מדויקת.</p>
+    <div class="fail-grid">
+      <div class="fail-card">
+        <div class="fail-id">Q1 — מספרי</div>
+        <div class="fail-q">מה הפרמיה השנתית לפנסים ומראות צד?</div>
+        <div class="fail-why">הערך <code>58 ש"ח</code> קבור בשורה אחת בתוך טבלה של 2,800 תווים. Dense embedding "מאבד" שורות בודדות.</div>
+      </div>
+      <div class="fail-card">
+        <div class="fail-id">Q2 — מספרי</div>
+        <div class="fail-q">מה סך כיסוי רכוש צד שלישי?</div>
+        <div class="fail-why">Gemini שלף טבלה סמנטית דומה מאותו מסמך — שגיאת "ערבוב טבלאות" טיפוסית לדיוק סמנטי.</div>
+      </div>
+      <div class="fail-card">
+        <div class="fail-id">Q4 — מספרי</div>
+        <div class="fail-q">מה השתתפות עצמית בגניבה חלקית?</div>
+        <div class="fail-why">בדיוק כמו Q1 — ערך מספרי ספציפי בשורת טבלה; החתיכה הנכונה לא מדורגת במקום ראשון.</div>
+      </div>
+    </div>
+  </div>
+
+  <p style="color:var(--muted);font-size:0.9rem;margin-top:16px;padding:14px 18px;background:rgba(129,140,248,0.06);border-radius:8px;border-right:3px solid var(--accent);">
+    💡 <strong>שורש הבעיה:</strong> שיטת <code>section_aware</code> חותכת לפי כותרות Markdown. כל הטבלה נהיית chunk אחד ענק (≤2,800 תווים), ושורות בודדות אינן retrievable בנפרד. זה הסיבה לכשלים Q1, Q2, Q4 — לא מודל ההטמעות.
+  </p>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════ LAYER 1 ══ -->
+<section>
+  <div class="reveal">
+    <div class="layer-badge layer-1">⚡ שכבה 1 — שינויי Prompt</div>
+    <h2 class="section-title">תיקוני <span>Prompt Engineering</span></h2>
+    <p class="section-sub">שינויים לפי שעות — לא נדרש שינוי ב-pipeline. משפיעים על איכות תשובה, לא על שליפה.</p>
+  </div>
+
+  <div class="improve-grid">
+
+    <!-- Card 1 -->
+    <div class="improve-card reveal">
+      <div class="accent-bar green"></div>
+      <div class="improve-card-header">
+        <h3>1. תיוג chunk בתוך ה-context</h3>
+        <span class="effort-tag effort-hour">⏱ שעה</span>
+      </div>
+      <p>כרגע הקטעים מועברים כטקסט גולמי ללא זיהוי. המודל לא יודע מאיזה מסמך/סעיף הגיע כל פיסת מידע — ולכן לא יכול לצטט.</p>
+      <div class="impact-row">
+        <span class="impact-pill green">✓ ציטוטים מדויקים</span>
+        <span class="impact-pill green">✓ traceability</span>
+      </div>
+      <div class="code-block"><pre><span class="cm"># לפני: הקשר:\n{text1}\n{text2}</span>
+
+<span class="cm"># אחרי:</span>
+context = <span class="st">"\n\n"</span>.join(
+    <span class="st">f"[מסמך: <span class="nm">{c['source_doc']}</span>, סעיף: <span class="nm">{c['section'] or 'כללי'}</span>]\n<span class="nm">{text}</span>"</span>
+    <span class="kw">for</span> c, text <span class="kw">in</span> <span class="fn">zip</span>(chunks, texts)
+)</pre></div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="improve-card reveal">
+      <div class="accent-bar green"></div>
+      <div class="improve-card-header">
+        <h3>2. הוראת Refusal — "לא נמצא"</h3>
+        <span class="effort-tag effort-hour">⏱ שעה</span>
+      </div>
+      <p>המודל כרגע עלול להמציא תשובה כשהמידע לא נמצא בהקשר. הוספת הוראת refusal מפחיתה hallucination ישירות.</p>
+      <div class="impact-row">
+        <span class="impact-pill green">✓ פחות hallucination</span>
+        <span class="impact-pill">⚠ עלול להגביר refusals שגויים</span>
+      </div>
+      <div class="code-block"><pre>system = <span class="st">"""אתה עוזר המתמחה בפוליסות ביטוח. ענה בעברית בלבד.
+אם המידע אינו מופיע <strong>במפורש</strong> בהקשר שסופק —
+ענה: 'המידע לא נמצא בפוליסה שסופקה.'
+אל תשער, אל תמציא מספרים."""</span></pre></div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="improve-card reveal">
+      <div class="accent-bar green"></div>
+      <div class="improve-card-header">
+        <h3>3. Structured Output — JSON</h3>
+        <span class="effort-tag effort-hour">⏱ 2 שעות</span>
+      </div>
+      <p>במקום תשובה חופשית, בקש מהמודל JSON. כך אפשר לאמת שה-citation שהוחזר אכן תומך בתשובה.</p>
+      <div class="impact-row">
+        <span class="impact-pill green">✓ ציטוטים ניתנים לאימות</span>
+        <span class="impact-pill green">✓ confidence score</span>
+      </div>
+      <div class="code-block"><pre><span class="cm"># הפלט הרצוי מ-Gemini:</span>
+{
+  <span class="st">"answer"</span>: <span class="st">"58 ש"ח"</span>,
+  <span class="st">"evidence_quote"</span>: <span class="st">"פנסים ומראות צד | 58 ש\"ח"</span>,
+  <span class="st">"source"</span>: <span class="st">"car_policy1 / ## פרמיות"</span>,
+  <span class="st">"cannot_answer"</span>: <span class="kw">false</span>
+}</pre></div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════ LAYER 2 ══ -->
+<section>
+  <div class="reveal">
+    <div class="layer-badge layer-2">🔍 שכבה 2 — שיפור שליפה</div>
+    <h2 class="section-title"><span>Retrieval</span> — מה Dense Embedding לא יכול לעשות</h2>
+    <p class="section-sub">Dense embeddings מעולים לסמנטיקה — אבל גרועים לחיפוש מספרים מדויקים, שמות, וביטויים ספציפיים. כאן נכנסת שיטות משלימות.</p>
+  </div>
+
+  <div class="improve-grid">
+
+    <!-- Card 4 -->
+    <div class="improve-card reveal">
+      <div class="accent-bar"></div>
+      <div class="improve-card-header">
+        <h3>4. Hybrid Retrieval — BM25 + Dense</h3>
+        <span class="effort-tag effort-day">📅 יום</span>
+      </div>
+      <p>BM25 הוא מנוע חיפוש lexical — הוא מצטיין בדיוק על מספרים וביטויים מדויקים. שילוב עם Dense via RRF (Reciprocal Rank Fusion) מכסה את שתי החולשות.</p>
+      <div class="impact-row">
+        <span class="impact-pill green">✓ ישיר לכשלי Q1/Q4</span>
+        <span class="impact-pill green">✓ ROI גבוה ביותר</span>
+        <span class="impact-pill">⚠ תוספת תלות: rank-bm25</span>
+      </div>
+      <div class="diff-row">
+        <div class="diff-box diff-before">
+          <div class="diff-label">❌ Dense בלבד</div>
+          שאילתה: "פרמיה פנסים" → מוצא chunks על ביטוח כולל, לא שורה ספציפית
+        </div>
+        <div class="diff-box diff-after">
+          <div class="diff-label">✅ BM25 + Dense</div>
+          BM25 מוצא <code>58</code> ו-<code>פנסים ומראות</code> בדיוק; Dense מוסיף הקשר סמנטי
+        </div>
+      </div>
+      <div class="code-block"><pre><span class="kw">from</span> rank_bm25 <span class="kw">import</span> BM25Okapi
+
+<span class="cm"># RRF — Reciprocal Rank Fusion</span>
+<span class="kw">def</span> <span class="fn">rrf_merge</span>(dense_ids, bm25_ids, k=60):
+    scores = {}
+    <span class="kw">for</span> rank, doc_id <span class="kw">in</span> <span class="fn">enumerate</span>(dense_ids):
+        scores[doc_id] = scores.<span class="fn">get</span>(doc_id, 0) + 1/(k + rank + 1)
+    <span class="kw">for</span> rank, doc_id <span class="kw">in</span> <span class="fn">enumerate</span>(bm25_ids):
+        scores[doc_id] = scores.<span class="fn">get</span>(doc_id, 0) + 1/(k + rank + 1)
+    <span class="kw">return</span> <span class="fn">sorted</span>(scores, key=<span class="kw">lambda</span> x: scores[x], reverse=<span class="kw">True</span>)</pre></div>
+    </div>
+
+    <!-- Card 5 -->
+    <div class="improve-card reveal">
+      <div class="accent-bar"></div>
+      <div class="improve-card-header">
+        <h3>5. Similarity Threshold — עצור לפני Generation</h3>
+        <span class="effort-tag effort-hour">⏱ שעה</span>
+      </div>
+      <p>כרגע, top-5 תמיד עוברים ל-generation — גם כשציון הדמיון הטוב ביותר הוא 0.28. הוספת threshold מונעת hallucination על שאלות שהמערכת לא יכולה לענות עליהן.</p>
+      <div class="impact-row">
+        <span class="impact-pill green">✓ פחות hallucination</span>
+        <span class="impact-pill">⚠ דרוש כיול threshold</span>
+      </div>
+      <div class="code-block"><pre>SIMILARITY_THRESHOLD = 0.35
+
+results = <span class="fn">retrieve</span>(query, strategy, family_id, top_k=5)
+<span class="kw">if</span> results[0][<span class="st">"score"</span>] &lt; SIMILARITY_THRESHOLD:
+    <span class="kw">return</span> {
+        <span class="st">"answer"</span>: <span class="st">"לא נמצא מידע רלוונטי בפוליסה"</span>,
+        <span class="st">"sources"</span>: []
+    }
+<span class="cm"># המשך ל-generation רק אם יש match טוב</span></pre></div>
+    </div>
+
+    <!-- Card 6 -->
+    <div class="improve-card reveal">
+      <div class="accent-bar"></div>
+      <div class="improve-card-header">
+        <h3>6. Reranker — Retrieve רחב, Rank מדויק</h3>
+        <span class="effort-tag effort-day">📅 יומיים</span>
+      </div>
+      <p>שלוף top-20 בעזרת Bi-encoder (מהיר), ואז דרג מחדש ל-top-5 עם Cross-encoder (איטי, מדויק). Cross-encoder רואה <em>זוג</em> שאלה+קטע ומחליט ביחד.</p>
+      <div class="impact-row">
+        <span class="impact-pill green">✓ שיפור Hit@1 משמעותי</span>
+        <span class="impact-pill">⚠ עיכוב ~200ms נוסף</span>
+      </div>
+      <div class="code-block"><pre><span class="kw">from</span> sentence_transformers <span class="kw">import</span> CrossEncoder
+
+reranker = CrossEncoder(<span class="st">"cross-encoder/ms-marco-MiniLM-L-6-v2"</span>)
+
+<span class="cm"># שלוף רחב, rerank ל-top-5</span>
+candidates = <span class="fn">retrieve</span>(query, top_k=<span class="nm">20</span>)
+pairs = [(query, c[<span class="st">"text"</span>]) <span class="kw">for</span> c <span class="kw">in</span> candidates]
+scores = reranker.<span class="fn">predict</span>(pairs)
+top5 = <span class="fn">sorted</span>(<span class="fn">zip</span>(candidates, scores),
+               key=<span class="kw">lambda</span> x: x[1], reverse=<span class="kw">True</span>)[:<span class="nm">5</span>]</pre></div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════ LAYER 3 ══ -->
+<section>
+  <div class="reveal">
+    <div class="layer-badge layer-3">🏗️ שכבה 3 — שינויי ארכיטקטורה</div>
+    <h2 class="section-title"><span>Chunking</span> — הפתרון המלא לשורות טבלה</h2>
+    <p class="section-sub">הפתרון האמיתי ל-Q1/Q2/Q4. שורות טבלה הן יחידות מידע עצמאיות — הן צריכות להיות chunks עצמאיים.</p>
+  </div>
+
+  <div class="improve-grid">
+
+    <!-- Card 7 -->
+    <div class="improve-card reveal">
+      <div class="accent-bar orange"></div>
+      <div class="improve-card-header">
+        <h3>7. Table-Aware Chunking — שורה = chunk</h3>
+        <span class="effort-tag effort-week">🗓 שבוע</span>
+      </div>
+      <p>
+        כרגע: טבלה שלמה (עשרות שורות) = chunk אחד גדול. המודל לא יכול "לאחזר" שורה ספציפית.
+        הפתרון: זיהוי טבלאות Markdown, ויצירת chunk לכל שורה עם header context חוזר.
+      </p>
+      <div class="impact-row">
+        <span class="impact-pill green">✓ פותר Q1 + Q4 ישירות</span>
+        <span class="impact-pill green">✓ ייתכן גם Q2</span>
+        <span class="impact-pill red">✗ מורכבות גבוהה ב-parser</span>
+      </div>
+      <div class="diff-row">
+        <div class="diff-box diff-before">
+          <div class="diff-label">❌ היום — chunk אחד לכל טבלה</div>
+          <code>## פרמיות</code><br>
+          | סוג כיסוי | עלות שנתית |<br>
+          | גוף הרכב | 1,200 ש"ח |<br>
+          | פנסים ומראות | 58 ש"ח | ← אבוד בתוך 2,800 תווים<br>
+          | השתתפות עצמית | 2,000 ש"ח |
+        </div>
+        <div class="diff-box diff-after">
+          <div class="diff-label">✅ מה רצוי — chunk לכל שורה</div>
+          chunk: <code>"פרמיות / פנסים ומראות צד: 58 ש"ח"</code><br><br>
+          chunk: <code>"פרמיות / גוף הרכב: 1,200 ש"ח"</code><br><br>
+          chunk: <code>"פרמיות / השתתפות עצמית: 2,000 ש"ח"</code>
+        </div>
+      </div>
+      <div class="code-block"><pre><span class="kw">def</span> <span class="fn">chunk_table_rows</span>(markdown_table: str, section: str, doc: str):
+    lines = markdown_table.<span class="fn">strip</span>().<span class="fn">splitlines</span>()
+    headers = [h.<span class="fn">strip</span>() <span class="kw">for</span> h <span class="kw">in</span> lines[0].<span class="fn">split</span>(<span class="st">"|"</span>) <span class="kw">if</span> h.<span class="fn">strip</span>()]
+    <span class="kw">for</span> row_line <span class="kw">in</span> lines[2:]:  <span class="cm"># skip header + separator</span>
+        cells = [c.<span class="fn">strip</span>() <span class="kw">for</span> c <span class="kw">in</span> row_line.<span class="fn">split</span>(<span class="st">"|"</span>) <span class="kw">if</span> c.<span class="fn">strip</span>()]
+        row_text = <span class="st">", "</span>.<span class="fn">join</span>(
+            <span class="st">f"<span class="nm">{h}</span>: <span class="nm">{v}</span>"</span> <span class="kw">for</span> h, v <span class="kw">in</span> <span class="fn">zip</span>(headers, cells)
+        )
+        <span class="kw">yield</span> <span class="fn">make_chunk</span>(<span class="st">f"<span class="nm">{section}</span> / <span class="nm">{row_text}</span>"</span>, doc)</pre></div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════ PRIORITY TABLE ══ -->
+<section>
+  <div class="reveal">
+    <h2 class="section-title">טבלת <span>עדיפויות</span></h2>
+    <p class="section-sub">Impact מחושב לפי שאלות Q1/Q4 (כשלים ידועים) + שיפור כללי.</p>
+
+    <table class="priority-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>שיפור</th>
+          <th>Impact על Q1/Q2/Q4</th>
+          <th>Impact כללי</th>
+          <th>זמן</th>
+          <th>תלויות</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Prompt refusal</strong></td>
+          <td class="prio-medium">🟡 חלקי</td>
+          <td class="prio-high">🟢 גבוה</td>
+          <td>שעה</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Context labeling</strong></td>
+          <td class="prio-medium">🟡 חלקי</td>
+          <td class="prio-high">🟢 גבוה</td>
+          <td>שעה</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Similarity threshold</strong></td>
+          <td>⬜ מינימלי</td>
+          <td class="prio-high">🟢 גבוה</td>
+          <td>שעה</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>BM25 Hybrid</strong></td>
+          <td class="prio-high">🟢 גבוה — ישיר</td>
+          <td class="prio-high">🟢 גבוה</td>
+          <td>יום</td>
+          <td><code>rank-bm25</code></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Structured JSON output</strong></td>
+          <td>⬜ מינימלי</td>
+          <td class="prio-medium">🟡 בינוני</td>
+          <td>2 שעות</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Cross-encoder reranker</strong></td>
+          <td class="prio-medium">🟡 בינוני</td>
+          <td class="prio-medium">🟡 בינוני</td>
+          <td>יומיים</td>
+          <td><code>cross-encoder/ms-marco</code></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Table-aware chunking</strong></td>
+          <td class="prio-arch">🟠 גבוה מאוד — שורש</td>
+          <td class="prio-high">🟢 גבוה</td>
+          <td>שבוע</td>
+          <td>שינוי pipeline</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="color:var(--muted);font-size:0.88rem;margin-top:20px;padding:14px 18px;background:var(--bg-card);border-radius:8px;">
+      📌 <strong>מסלול מומלץ:</strong> שיפורי Prompt (1+2+3) תוך שעות, BM25 Hybrid תוך יום — יביא את המערכת ל-8-9/10 על אותן 10 שאלות. Table-aware chunking הוא הפתרון הנכון לטווח הרחוק.
+    </p>
+  </div>
+
+  <div style="margin-top:48px;text-align:center;" class="reveal">
+    <a href="project_site.html" class="back-btn">← חזרה לאתר הראשי</a>
+  </div>
+</section>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
