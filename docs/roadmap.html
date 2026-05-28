@@ -236,8 +236,8 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
     <div class="fail-grid">
       <div class="fail-card">
         <div class="fail-id">Q1 — מספרי</div>
-        <div class="fail-q">מה הפרמיה השנתית לפנסים ומראות צד?</div>
-        <div class="fail-why">הערך <code>58 ש"ח</code> קבור בשורה אחת בתוך טבלה של 2,800 תווים. Dense embedding "מאבד" שורות בודדות.</div>
+        <div class="fail-q">מהי ההשתתפות העצמית עבור כיסוי החלפת מפתחות?</div>
+        <div class="fail-why">הערך <code>90 ש"ח</code> נמצא בטבלת המפרט, אבל ההקשר שנשלף מפנה לסעיף הכיסוי ולא לשורת המפרט המדויקת.</div>
       </div>
       <div class="fail-card">
         <div class="fail-id">Q2 — מספרי</div>
@@ -246,14 +246,14 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       </div>
       <div class="fail-card">
         <div class="fail-id">Q4 — מספרי</div>
-        <div class="fail-q">מה השתתפות עצמית בגניבה חלקית?</div>
-        <div class="fail-why">בדיוק כמו Q1 — ערך מספרי ספציפי בשורת טבלה; החתיכה הנכונה לא מדורגת במקום ראשון.</div>
+        <div class="fail-q">מהו סכום הביטוח עבור כיסוי אבדן ארנק?</div>
+        <div class="fail-why">הערך <code>1,133 ש"ח</code> קיים בטבלת המפרט, אבל ה-context התמקד בתיאור הכיסוי ולא בשורת הטבלה עם הסכום.</div>
       </div>
     </div>
   </div>
 
   <p style="color:var(--muted);font-size:0.9rem;margin-top:16px;padding:14px 18px;background:rgba(129,140,248,0.06);border-radius:8px;border-right:3px solid var(--accent);">
-    💡 <strong>שורש הבעיה:</strong> שיטת <code>section_aware</code> חותכת לפי כותרות Markdown. כל הטבלה נהיית chunk אחד ענק (≤2,800 תווים), ושורות בודדות אינן retrievable בנפרד. זה הסיבה לכשלים Q1, Q2, Q4 — לא מודל ההטמעות.
+    💡 <strong>שורש הבעיה:</strong> שיטת <code>section_aware</code> חותכת לפי כותרות Markdown. טבלאות מפרט יכולות להפוך ל-chunk גדול (≤2,800 תווים), ושורות בודדות אינן retrievable בנפרד. זה מסביר את Q1 ו-Q4; Q2 הוא כשל קרוב שבו נשלפה טבלה סמנטית דומה אך לא הנכונה.
   </p>
 </section>
 
@@ -322,8 +322,8 @@ context = <span class="st">"\n\n"</span>.join(
       </div>
       <div class="code-block"><pre><span class="cm"># הפלט הרצוי מ-Gemini:</span>
 {
-  <span class="st">"answer"</span>: <span class="st">"58 ש"ח"</span>,
-  <span class="st">"evidence_quote"</span>: <span class="st">"פנסים ומראות צד | 58 ש\"ח"</span>,
+  <span class="st">"answer"</span>: <span class="st">"90 ש"ח"</span>,
+  <span class="st">"evidence_quote"</span>: <span class="st">"החלפת מפתחות | 90 ש\"ח"</span>,
   <span class="st">"source"</span>: <span class="st">"car_policy1 / ## פרמיות"</span>,
   <span class="st">"cannot_answer"</span>: <span class="kw">false</span>
 }</pre></div>
@@ -360,11 +360,11 @@ context = <span class="st">"\n\n"</span>.join(
       <div class="diff-row">
         <div class="diff-box diff-before">
           <div class="diff-label">❌ Dense בלבד</div>
-          שאילתה: "פרמיה פנסים" → מוצא chunks על ביטוח כולל, לא שורה ספציפית
+          שאילתה: "השתתפות עצמית החלפת מפתחות" → מוצא chunks על הכיסוי, לא את שורת המפרט
         </div>
         <div class="diff-box diff-after">
           <div class="diff-label">✅ BM25 + Dense</div>
-          BM25 מוצא <code>58</code> ו-<code>פנסים ומראות</code> בדיוק; Dense מוסיף הקשר סמנטי
+          BM25 מוצא <code>90</code> ו-<code>החלפת מפתחות</code> בדיוק; Dense מוסיף הקשר סמנטי
         </div>
       </div>
       <div class="code-block"><pre><span class="kw">from</span> rank_bm25 <span class="kw">import</span> BM25Okapi
@@ -436,7 +436,7 @@ top5 = <span class="fn">sorted</span>(<span class="fn">zip</span>(candidates, sc
   <div class="reveal">
     <div class="layer-badge layer-3">🏗️ שכבה 3 — שינויי ארכיטקטורה</div>
     <h2 class="section-title"><span>Chunking</span> — הפתרון המלא לשורות טבלה</h2>
-    <p class="section-sub">הפתרון האמיתי ל-Q1/Q2/Q4. שורות טבלה הן יחידות מידע עצמאיות — הן צריכות להיות chunks עצמאיים.</p>
+    <p class="section-sub">הפתרון האמיתי ל-Q1/Q4 וחלק מכשלי Q2. שורות טבלה הן יחידות מידע עצמאיות — הן צריכות להיות chunks עצמאיים.</p>
   </div>
 
   <div class="improve-grid">
@@ -463,12 +463,12 @@ top5 = <span class="fn">sorted</span>(<span class="fn">zip</span>(candidates, sc
           <code>## פרמיות</code><br>
           | סוג כיסוי | עלות שנתית |<br>
           | גוף הרכב | 1,200 ש"ח |<br>
-          | פנסים ומראות | 58 ש"ח | ← אבוד בתוך 2,800 תווים<br>
+          | החלפת מפתחות | 90 ש"ח | ← אבוד בתוך 2,800 תווים<br>
           | השתתפות עצמית | 2,000 ש"ח |
         </div>
         <div class="diff-box diff-after">
           <div class="diff-label">✅ מה רצוי — chunk לכל שורה</div>
-          chunk: <code>"פרמיות / פנסים ומראות צד: 58 ש"ח"</code><br><br>
+          chunk: <code>"מפרט / החלפת מפתחות: 90 ש"ח"</code><br><br>
           chunk: <code>"פרמיות / גוף הרכב: 1,200 ש"ח"</code><br><br>
           chunk: <code>"פרמיות / השתתפות עצמית: 2,000 ש"ח"</code>
         </div>
@@ -493,7 +493,7 @@ top5 = <span class="fn">sorted</span>(<span class="fn">zip</span>(candidates, sc
 <section>
   <div class="reveal">
     <h2 class="section-title">טבלת <span>עדיפויות</span></h2>
-    <p class="section-sub">Impact מחושב לפי שאלות Q1/Q4 (כשלים ידועים) + שיפור כללי.</p>
+    <p class="section-sub">Impact מחושב לפי שאלות Q1/Q4 (ערכים מספריים בטבלאות) + שיפור כללי.</p>
 
     <table class="priority-table">
       <thead>

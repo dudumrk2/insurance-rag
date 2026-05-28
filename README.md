@@ -10,7 +10,7 @@ policies. Built for a course mid-term assignment, designed to also plug into the
 
 Ask natural-language questions about insurance policies (coverage limits, deductibles,
 exclusions, waiting periods, renewal dates) and get answers grounded in the policy text,
-with citations to the exact source chunks.
+with retrieved source anchors for auditability.
 
 Public interface:
 
@@ -26,10 +26,12 @@ answer(question: str) -> dict
 
 Start here — the design and the reasoning behind it:
 
-- [`docs/design-spec.md`](docs/design-spec.md) — **the what**: full technical design
-  (architecture, components, data flow, interfaces, testing).
+- [`docs/report.md`](docs/report.md) — **current implementation truth**: final pipeline,
+  evaluation results, known gaps, and reproducible run steps.
+- [`docs/design-spec.md`](docs/design-spec.md) — **historical design spec**: original
+  architecture plan; now annotated where the final implementation differs.
 - [`docs/DESIGN_RATIONALE.md`](docs/DESIGN_RATIONALE.md) — **the why**: the decision
-  journey, alternatives we weighed, and a primer on the RAG concepts used
+  journey, alternatives we weighed, final implementation notes, and a primer on the RAG concepts used
   (e5 prefixes, dense vs BM25 vs hybrid, bi-encoder vs cross-encoder reranking).
 - [`docs/mid_term_assignment.pdf`](docs/mid_term_assignment.pdf) — the original
   assignment brief.
@@ -39,8 +41,7 @@ Start here — the design and the reasoning behind it:
 - `docling` — PDF → Markdown
 - `sentence-transformers` + `intfloat/multilingual-e5-large` — embeddings
 - `chromadb` — persistent vector store
-- `google-genai` (Gemini 2.5 Flash) — answer generation
-- `anthropic` (Claude) — gold-set question generation only
+- `google-genai` (Gemini 2.5 Flash) — answer generation and gold-set candidate generation
 - `pytest` — tests
 
 ## Running
@@ -59,6 +60,7 @@ python scripts/redact.py                              # data/raw/*.pdf → data/
 
 # Step 2 — build vector indices
 pip install -e ".[embeddings,vectorstore,generation]"
+python scripts/chunk.py
 python build_index.py
 
 # Step 3 — run retrieval evaluation (ablation study)
@@ -69,7 +71,9 @@ pip install -e ".[server]"
 python server.py
 ```
 
-Run the tests with `pip install -e ".[dev]" && pytest`.
+Run the fast non-server suite with `pytest -m "not slow" --ignore=tests/test_server.py`
+in an environment with the project test dependencies installed. Clean-environment
+dependency metadata cleanup is tracked separately from this docs update.
 
 ## Privacy
 

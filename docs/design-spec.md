@@ -1,7 +1,7 @@
 # Insurance Policy RAG — Design Spec
 
 **Date:** 2026-05-20
-**Status:** Approved (pending written-spec review)
+**Status:** Historical design spec. The implementation is complete; this file records the original plan and has been annotated where the final code differs. Use `README.md` and `docs/report.md` as the source of truth for current behavior.
 **Branch:** `master` (standalone repo; Phase 2 integration happens on `feat/insurance-rag` in `ai-wealth-monitor`)
 **Author:** brainstorming session (Dudu + Claude)
 
@@ -39,7 +39,7 @@ generic Wikipedia-style corpus" requirement.
 - Two chunking strategies (fixed-size, section-aware)
 - Embeddings (`intfloat/multilingual-e5-large`)
 - Vector store (ChromaDB, persistent)
-- Retrieval + generation (Gemini 2.5 Flash) with citations
+- Retrieval + generation (Gemini 2.5 Flash) with retrieved source anchors; strict model-selected citations are future work
 - Gold set of 50 Hebrew questions, anchor-based citations
 - Evaluation (Hit@5, MRR, manual review of ≥10) + ablation table
 - 4-page report
@@ -53,7 +53,7 @@ generic Wikipedia-style corpus" requirement.
 ### Out of scope (noted as "future work" in report)
 - Cross-encoder reranking
 - Hybrid (BM25 + dense) retrieval — optional stretch ablation only
-- Upload→index live hook in `InsuranceFlow` (marked TODO)
+- Upload→index live hook in `InsuranceFlow` (future integration work)
 
 ---
 
@@ -64,12 +64,13 @@ Three pipeline stages, separate entry points:
 ```
 Stage 1 (Ingest, manual)       scripts/redact.py   PDF(raw) → Docling MD → redact → data/redacted/*.md
 Stage 2 (Index, reproducible)  build_index.py      redacted MD → chunk(×2) → embed → ChromaDB(×2 collections)
-Stage 3 (Ask, online)          src/rag_system.py   question → retrieve top-k → Gemini → {answer, sources, retrieved_chunks}
+Stage 3 (Ask, online)          src/generation.py   question → retrieve top-k → Gemini → {answer, sources, strategy, question}
 ```
 
-Two consumers of `answer()`:
-- **Eval/CLI:** `eval/run_eval.py` imports `answer()`.
-- **Integration:** `backend/routers/dashboard_chat.py` registers `answer()` as a Gemini tool.
+Current consumers of `answer()`:
+- **CLI / demo server:** direct imports from `src.generation`.
+- **Flask demo:** `server.py` exposes `/ask` and calls `answer()`.
+- **Eval:** `eval/run_eval.py` evaluates retrieval directly rather than scoring generated answers.
 
 ---
 
@@ -81,7 +82,7 @@ insurance-rag/
 │   ├── raw/                          # original PDFs — gitignored (contain PII)
 │   ├── redacted/                     # *.md, PII removed — committed
 │   ├── processed/
-│   │   ├── chunks_fixed_size.jsonl
+│   │   ├── chunks_fixed.jsonl
 │   │   └── chunks_section_aware.jsonl
 │   ├── redaction_log.json            # what was removed + where (no PII values)
 │   └── MANIFEST.md
@@ -90,35 +91,36 @@ insurance-rag/
 │   ├── config.py                     # paths, model names, chunk sizes
 │   ├── pdf_to_md.py                  # Docling → markdown
 │   ├── redaction.py                  # regex + known-strings → clean MD
-│   ├── chunking.py                   # FixedSizeChunker, SectionAwareChunker
-│   ├── embeddings.py                 # sentence-transformers e5 wrapper
-│   ├── vector_store.py               # ChromaDB wrapper (add/query/reset)
+│   ├── chunking.py                   # chunk_fixed(), chunk_section_aware()
+│   ├── embedder.py                   # sentence-transformers e5 wrapper
+│   ├── indexer.py                    # ChromaDB collection builder
 │   ├── retrieval.py                  # retrieve(query, k, strategy, family_id)
-│   ├── generation.py                 # call Gemini, parse citations
-│   ├── rag_system.py                 # answer() — public interface
-│   └── utils.py                      # token counting, file IO, logging
+│   ├── generation.py                 # answer() public interface + Gemini call
+│   └── utils.py                      # logging and small helpers
 ├── scripts/
-│   └── redact.py                     # CLI: data/raw/*.pdf → data/redacted/*.md
+│   ├── redact.py                     # CLI: data/raw/*.pdf → data/redacted/*.md
+│   ├── chunk.py                      # CLI: data/redacted/*.md → data/processed/chunks_*.jsonl
+│   └── build_gold_set.py             # Gemini generates candidates for review
 ├── eval/
 │   ├── gold_set.jsonl                # 50 Hebrew questions, anchor-based
-│   ├── generate_gold_candidates.py   # Claude generates candidates for review
-│   ├── run_eval.py                   # runs answer() over gold set, prints metrics
-│   └── results/
-│       ├── eval_fixed_size_500.json
-│       ├── eval_section_aware.json
-│       └── ablation_table.md
+│   ├── run_eval.py                   # retrieval Hit@k/MRR over gold set
+│   ├── ablation_results.md
+│   ├── embedding_ablation_results.md
+│   └── answer_eval_gemini_results.md
 ├── tests/
 │   ├── conftest.py                   # fixtures (tiny MD corpus, 2 families)
 │   ├── test_chunking.py
 │   ├── test_redaction.py
-│   ├── test_embeddings.py
-│   ├── test_vector_store.py
+│   ├── test_embedder.py
+│   ├── test_indexer.py
 │   ├── test_retrieval.py
-│   └── test_e2e.py                   # build_index → answer, tenancy isolation
+│   ├── test_generation.py
+│   ├── test_eval.py
+│   └── test_server.py
 ├── build_index.py                    # reproducible index build entry point
 ├── pyproject.toml                    # editable install
 ├── requirements.txt
-├── report.md                         # → report.pdf
+├── docs/report.md                    # final report
 ├── README.md                         # exact run instructions
 └── .gitignore                        # data/raw/, indices/, __pycache__, *.pyc
 ```
@@ -126,8 +128,11 @@ insurance-rag/
 Index storage (gitignored, rebuilt by `build_index.py`):
 ```
 insurance-rag/indices/
-├── chroma_fixed_size/
-└── chroma_section_aware/
+└── chroma.sqlite3                    # Chroma PersistentClient root
+
+Collections:
+- insurance_fixed
+- insurance_section_aware
 ```
 
 ---
@@ -138,41 +143,38 @@ insurance-rag/indices/
 |---|---|---|---|
 | `pdf_to_md` | `convert(pdf_path)` | path | str (markdown) |
 | `redaction` | `redact(md_text, known_strings)` | str + list | (str_redacted, log_dict) |
-| `chunking` | `FixedSizeChunker(size, overlap).split(doc)` | doc | list[Chunk] |
-| `chunking` | `SectionAwareChunker(max_size).split(doc)` | doc | list[Chunk] |
-| `embeddings` | `Embedder().encode(texts, is_query=False)` | list[str] | np.ndarray |
-| `vector_store` | `VectorStore(strategy).add / query / reset` | — | — |
+| `chunking` | `chunk_fixed(text, doc_name, family_id, chunk_size, overlap)` | text + metadata | list[dict] |
+| `chunking` | `chunk_section_aware(text, doc_name, family_id, max_tokens)` | text + metadata | list[dict] |
+| `embedder` | `embed_texts(texts)` / `embed_query(text)` | list[str] / str | np.ndarray |
+| `indexer` | `build_collection(strategy, chunks, embeddings)` | chunks + embeddings | Chroma collection |
 | `retrieval` | `retrieve(query, k, strategy, family_id)` | str+int+str+str | list[dict] |
-| `generation` | `generate(question, chunks)` | str + list | dict(text, used_chunks) |
-| `rag_system` | `answer(question, family_id="demo_family_001", strategy="section_aware")` | str+str+str | dict (per spec) |
+| `generation` | `answer(question, family_id="demo_family_001", strategy="section_aware")` | str+str+str | dict |
 
 ### Standard `Chunk` shape (everywhere)
 ```python
 {
-    "chunk_id": "health_policy__sa__sec_03",   # {doc_id}__{strategy_abbrev}__{seq:03d}
-    "doc_id": "health_policy",
-    "text": "...",
-    "metadata": {
-        "source": "health_policy.pdf",
-        "page_start": 12,
-        "page_end": 13,
-        "section": "ניתוחים מיוחדים",
-        "family_id": "demo_family_001",
-        "strategy": "section_aware",
-        "policy_type": "בריאות"
-    }
+    "chunk_id": "demo_family_001_section_aware_health_policy_3",
+    "text": "passage: ...",
+    "source_doc": "health_policy",
+    "strategy": "section_aware",
+    "family_id": "demo_family_001",
+    "anchor": "...",                  # first 80 raw-text chars
+    "section": "## ניתוחים מיוחדים"   # None for fixed chunks
 }
 ```
-Strategy abbreviations: `sa` (section_aware), `fs500` / `fs300` / `fs700` (fixed_size by size).
+Strategy names in chunk metadata: `fixed` and `section_aware`.
 
-### `answer()` return contract (assignment-mandated)
+### `answer()` return contract (implemented)
 ```python
 {
     "answer": str,
-    "sources": list[str],          # chunk_ids cited
-    "retrieved_chunks": list[dict] # each: chunk_id, text, score, metadata
+    "sources": list[str],          # anchors from all retrieved chunks, not model-selected citations
+    "strategy": str,
+    "question": str
 }
 ```
+
+Returning `retrieved_chunks` with per-chunk metadata is a documented future improvement.
 
 ---
 
@@ -191,44 +193,34 @@ Strategy abbreviations: `sa` (section_aware), `fs500` / `fs300` / `fs700` (fixed
 
 ### Phase 2 — Indexing (`build_index.py`, deterministic)
 For each `data/redacted/*.md`:
-- `FixedSizeChunker(500, 50).split()` → `chunks_fixed_size.jsonl` → embed → `VectorStore("fixed_size_500")`
-- `SectionAwareChunker(700).split()` → `chunks_section_aware.jsonl` → embed → `VectorStore("section_aware")`
+- `chunk_fixed(..., chunk_size=500, overlap=50)` → `chunks_fixed.jsonl` → embed → Chroma collection `insurance_fixed`
+- `chunk_section_aware(..., max_tokens=700)` → `chunks_section_aware.jsonl` → embed → Chroma collection `insurance_section_aware`
 
 Reproducibility:
 - Chunkers are deterministic (no randomness).
-- `torch.manual_seed(42)`, inference mode, no dropout.
-- ChromaDB `PersistentClient` with fixed path.
-- `build_index.py --reset` deletes `indices/` and rebuilds identically.
+- ChromaDB `PersistentClient` uses the fixed `indices/` path.
+- `build_collection()` deletes and recreates the target collection on each run.
 - `data/processed/*.jsonl` is the source of truth; deleting `indices/` is always safe.
 
 ### Phase 3 — Question answering (online)
 1. `retrieve(q, k=5, strategy, family_id)`:
-   - `Embedder.encode([q], is_query=True)` → applies `"query: "` prefix.
-   - `VectorStore.query(emb, k, where={"family_id": family_id})`.
+   - `embed_query(q)` → applies `"query: "` prefix.
+   - ChromaDB `collection.query(..., where={"family_id": family_id})`.
    - Returns top-k chunks with scores.
 2. `generate(q, chunks)`:
-   - Builds prompt with context blocks tagged `[chunk_id: ...]`.
+   - Builds a Hebrew prompt with raw concatenated context blocks.
    - Gemini 2.5 Flash, temperature 0.2.
-   - System rule: answer only from context; if absent say
-     "המידע לא נמצא בפוליסות שלי."; cite chunk_ids used.
-3. Parse `[chunk_id: ...]` markers → `sources`. Return full contract dict.
+   - System rule: answer in Hebrew based on the supplied context.
+3. Return answer plus `sources = [chunk["anchor"] for chunk in chunks]`.
 
 ### Prompt structure
 ```
-אתה עוזר לענות על שאלות מתוך פוליסות ביטוח.
-ענה אך ורק מתוך הקונטקסט. אם התשובה לא נמצאת בקונטקסט, אמור:
-"המידע לא נמצא בפוליסות שלי."
-ציטוטים: בסוף התשובה ציין באילו chunks השתמשת בפורמט [chunk_id].
-(אם התשובה היא 'לא מכוסה', עדיין ציין את ה-chunk שאיפשר את ההסקה.)
+System: אתה עוזר המתמחה בפוליסות ביטוח. ענה בעברית בלבד על בסיס ההקשר שסופק.
 
-שאלה:
-{question}
+User: הקשר:
+{plain concatenated retrieved chunks}
 
-קונטקסט:
-[chunk_id: car_policy__sa__sec_05, source: car_policy.pdf, pages: 12-13]
-...
-
-תשובה:
+שאלה: {question}
 ```
 
 ---
@@ -239,19 +231,19 @@ Reproducibility:
 - Documents/chunks → prefix `"passage: "`
 - Search queries → prefix `"query: "`
 
-`Embedder.encode(texts, is_query)` applies the correct prefix. Omitting/swapping prefixes
-silently degrades retrieval. Embedding dim = 1024, L2-normalized.
+`embed_query(text)` applies the query prefix; chunks already carry the passage prefix
+from `src.chunking`. Omitting/swapping prefixes silently degrades retrieval.
+Embedding dim = 1024, L2-normalized.
 
 ---
 
 ## 8. Chunking strategies & ablation
 
-**Strategy 1 — Fixed-size:** 500 tokens, overlap 50, e5 tokenizer. Naive baseline; may cut
-mid-sentence.
+**Strategy 1 — Fixed-size:** 500 characters, overlap 50 characters. Naive baseline; may cut
+mid-sentence. The original plan used token windows, but the implemented code uses character windows.
 
 **Strategy 2 — Section-aware:** splits on Docling `##` headings (הגדרות / כיסויים / חריגים /
-תגמולי ביטוח / ביטולים). Sections over 700 tokens recursively sub-split by paragraph then
-sentence. Empty/heading-only sections merge with the section below.
+תגמולי ביטוח / ביטולים). Sections over 2,800 characters (approximately 700 Hebrew tokens) fall back to fixed sub-chunking.
 
 **Ablation table (4 rows):**
 | Experiment | Hit@5 | Answer accuracy | Notes |
@@ -267,10 +259,9 @@ Optional stretch: dense vs hybrid (BM25 + dense via RRF) as a 5th row.
 
 ## 9. Gold set
 
-- 50 Hebrew questions, 10 per category: factual, numerical, temporal, negation, comparison.
-- Generation: **Claude** produces candidates (deliberately a different LLM than the
-  Gemini answerer, to avoid circular evaluation); human reviews/edits/adds the hard
-  negation & comparison cases.
+- 50 Hebrew questions selected from 75 generated candidates.
+- Generation: **Gemini 2.5 Flash** produces candidates; human review selects the final set.
+- Evaluation scoring is mechanical substring matching over real chunks, but the question distribution can still be model-biased because Gemini generated the candidates.
 - **Anchor-based citations** (not chunk_ids, which differ per strategy):
 ```json
 {
@@ -280,16 +271,16 @@ Optional stretch: dense vs hybrid (BM25 + dense via RRF) as a 5th row.
   "category": "numerical"
 }
 ```
-- Hit@k = at least one of the top-k retrieved chunks overlaps the anchor (page range or
-  section). Survives both chunking strategies → fair comparison.
+- Hit@k = at least one of the top-k retrieved chunk texts contains the gold anchor.
+  This survives both chunking strategies and supports fair comparison.
 
 ---
 
 ## 10. Multi-tenancy
 
 - Every chunk carries `family_id` in metadata.
-- `VectorStore.query()` requires `family_id` as a mandatory parameter; calling without it
-  raises (assert/ValueError). A loud failure is preferred over silent cross-family leakage.
+- `retrieve()` accepts `family_id` and always sends it as a ChromaDB metadata filter.
+  The default assignment/demo value is `demo_family_001`.
 - Assignment corpus runs under fixed `family_id="demo_family_001"`; integration uses
   `config.DEMO_UID`.
 
@@ -302,7 +293,7 @@ Optional stretch: dense vs hybrid (BM25 + dense via RRF) as a 5th row.
 ```python
 def query_insurance_policies(question: str) -> str:
     """ענה על שאלה מתוך פוליסות הביטוח של המשפחה (חיפוש סמנטי)."""
-    from insurance_rag.src.rag_system import answer
+    from src.generation import answer
     result = answer(question, family_id=uid, strategy="section_aware")
     return f"{result['answer']}\n\nמקורות: {', '.join(result['sources'])}"
 ```
@@ -331,38 +322,38 @@ Three preconditions for the demo to work:
 
 | Scenario | Handling |
 |---|---|
-| `family_id` has no indexed policies | return "המידע לא נמצא...", empty sources/chunks |
+| `family_id` has no indexed policies | current implementation passes empty context to generation; explicit refusal is future work |
 | Docling fails on a PDF | `redact.py` exits code 2 for that file, continues to next |
 | Regex missed some PII | logged; **manual log review before submission** is the safety net |
-| Single heading section > 700 tokens | recursive sub-split (paragraph → sentence) |
-| Empty/heading-only section | merge with section below |
-| Gemini 429 / rate limit | exponential backoff 1s/2s/4s; after 3 fails → graceful error dict |
-| Gemini answer without `[chunk_id]` | sources=[] but retrieved_chunks still populated |
-| Empty/whitespace query | early ValueError in answer() |
+| Single heading section > ~2,800 chars | fixed-size fallback sub-chunking |
+| Empty section | skipped; heading-only nonblank sections are kept as chunks |
+| Gemini 429 / rate limit | not retried in `src/generation.py`; retries exist in gold-set generation only |
+| Gemini answer without citations | sources still contain all retrieved anchors |
+| Empty/whitespace query | no dedicated early rejection in `answer()`; caller validation is future work |
 | Non-Hebrew query (Arabic/Russian) | e5 + Gemini are multilingual; behavior not guaranteed (documented as limitation) |
-| Two policies same name | doc_id gets short hash suffix: `health_policy_a3f2` |
-| Corrupt Chroma collection | `build_index.py --reset` rebuilds from `data/processed/` |
+| Two policies same stem | not specially handled; filenames must be unique in `data/redacted/` |
+| Corrupt Chroma collection | delete `indices/` or rerun `build_index.py`; each collection is recreated |
 
 ---
 
 ## 13. Testing strategy
 
 **Unit (pytest):**
-- `chunking`: word-boundary splits, overlap correctness, `##` detection, recursive
-  sub-split, determinism (same input → same output).
+- `chunking`: character-window splits, overlap correctness, `##` detection,
+  fixed-size fallback for oversized sections, determinism (same input → same output).
 - `redaction`: catches Israeli ID/phone/email, removes known string, log contains no PII.
-- `embeddings`: shape (1024), L2-normalized, batching.
-- `vector_store`: add/query/reset, `where` filter, persistent reload.
-- `retrieval`: `family_id` mandatory (raises without it), k respected, scores descending.
+- `embedder`: shape (1024), L2-normalized, batching.
+- `indexer`: build/load Chroma collections, `where` filter metadata, persistent reload.
+- `retrieval`: `family_id` filter applied, k respected, Chroma order preserved.
 
-**Integration (`tests/test_e2e.py`):**
-- Fixture: 2 small MD files, 2 families. `build_index()` → `answer()` for family A.
-- Assert no family-B chunk appears in results (tenancy boundary).
+**Integration/server:**
+- `tests/test_generation.py` mocks retrieval/generation to verify the public contract.
+- `tests/test_server.py` mocks `answer()` and verifies `/ask` behavior and CORS.
 
 **Determinism:** run `build_index.py` twice, assert `chunks_*.jsonl` hashes match.
 
-**Eval as the big test:** `eval/run_eval.py` produces Hit@5, MRR, and manual-review
-classification of ≥10 answers (Correct / Partial / Incorrect / Hallucinated).
+**Eval as the big test:** `eval/run_eval.py` produces Hit@k and MRR. Manual answer
+classification is recorded separately in the report and Gemini answer-eval artifacts.
 
 Not tested: LLM stability (Gemini not mocked — empirical via eval); Docling perf (one-time).
 
@@ -390,8 +381,7 @@ Step 8: Chat integration          → tool + demo_seeder + demo bypass (Phase 2)
 - `docling` — PDF → Markdown
 - `sentence-transformers` + `intfloat/multilingual-e5-large` — embeddings
 - `chromadb` — persistent vector store
-- `google-genai` (Gemini 2.5 Flash) — generation (already in backend)
-- `anthropic` (Claude) — gold-set candidate generation only
+- `google-genai` (Gemini 2.5 Flash) — generation and gold-set candidate generation
 - `pytest` — tests
 - PyMuPDF (transitively via Docling) — note AGPL-3.0 license constraint
 
