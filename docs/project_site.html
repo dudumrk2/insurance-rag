@@ -1018,11 +1018,11 @@ echo GEMINI_API_KEY=your_key > .env</pre>
       </div>
       <div id="tab-index" class="tab-panel">
         <button class="copy-btn" onclick="copyCode('index')">העתק</button>
-        <pre id="code-index">python scripts/pdf_to_md.py    # PDF → Markdown
-python scripts/redact.py       # הסרת PII
+        <pre id="code-index">python scripts/redact.py       # PDF → Markdown + הסרת PII
+python scripts/chunk.py        # חלוקה לקטעים
 python build_index.py          # embedding + ChromaDB
-# → indices/insurance_section_aware  (447 chunks)
-# → indices/insurance_fixed          (944 chunks)</pre>
+# → collections: insurance_section_aware (447 chunks)
+# → collections: insurance_fixed         (944 chunks)</pre>
       </div>
       <div id="tab-eval" class="tab-panel">
         <button class="copy-btn" onclick="copyCode('eval')">העתק</button>

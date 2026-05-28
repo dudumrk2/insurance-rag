@@ -301,13 +301,13 @@ pip install -e ".[all]"
 # 2. הגדרת מפתחות API (יצירת קובץ .env בשורש הפרויקט)
 echo "GEMINI_API_KEY=your_key_here" > .env
 
-# 3. המרת PDF ל-Markdown (דורש קבצי PDF ב-data/raw/)
-python scripts/pdf_to_md.py
-
-# 4. הסרת PII מהמסמכים
+# 3. המרת PDF ל-Markdown + הסרת PII (דורש קבצי PDF ב-data/raw/)
 python scripts/redact.py
 
-# 5. בניית ה-Index (chunking + embedding + ChromaDB)
+# 4. חלוקה לקטעים
+python scripts/chunk.py
+
+# 5. בניית ה-Index (embedding + ChromaDB)
 #    כותב: data/processed/chunks_*.jsonl + indices/
 python build_index.py
 
@@ -326,8 +326,8 @@ print(result['answer'])
 print('מקורות:', result['sources'])
 "
 
-# 9. הרצת כל הטסטים
-python -m pytest tests/ -v
+# 9. הרצת הטסטים המהירים שאינם דורשים שרת
+python -m pytest -q -m "not slow" --ignore=tests/test_server.py
 ```
 
 </div>
@@ -390,6 +390,11 @@ python -m pytest tests/ -v
 
 התלויות מחולקות ל-`extras` כדי שכל שלב יתקין רק מה שצריך:
 
+הערת סטטוס: המימוש של `scripts/build_gold_set.py` כבר משתמש ב-`google-genai`, אבל
+מטא-דאטת התלויות עדיין כוללת שארית היסטורית של `anthropic` ב-`goldset`/`all`,
+ו-`dev` אינו מתקין את כל התלויות הדרושות להרצת כל הטסטים בסביבה נקייה. ניקוי
+המטא-דאטה נשאר ל-PR נפרד כדי שהעדכון הנוכחי יהיה תיעודי בלבד.
+
 <div dir="ltr">
 
 ```toml
@@ -398,7 +403,9 @@ pdf        = ["docling>=2.0"]
 embeddings = ["sentence-transformers>=3.0", "torch>=2.2"]
 vectorstore= ["chromadb>=0.5"]
 generation = ["google-genai>=0.8"]
-dev        = ["pytest>=8.0", "python-dotenv>=1.0", "flask>=3.0", "flask-cors>=4.0"]
+goldset    = ["anthropic>=0.40"]  # stale metadata; implementation uses google-genai
+server     = ["flask>=3.0", "flask-cors>=4.0"]
+dev        = ["pytest>=8.0", "python-dotenv>=1.0"]
 all        = [...]   # הכל ביחד
 ```
 

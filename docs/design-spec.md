@@ -82,7 +82,7 @@ insurance-rag/
 │   ├── raw/                          # original PDFs — gitignored (contain PII)
 │   ├── redacted/                     # *.md, PII removed — committed
 │   ├── processed/
-│   │   ├── chunks_fixed_size.jsonl
+│   │   ├── chunks_fixed.jsonl
 │   │   └── chunks_section_aware.jsonl
 │   ├── redaction_log.json            # what was removed + where (no PII values)
 │   └── MANIFEST.md
@@ -98,15 +98,15 @@ insurance-rag/
 │   ├── generation.py                 # answer() public interface + Gemini call
 │   └── utils.py                      # logging and small helpers
 ├── scripts/
-│   └── redact.py                     # CLI: data/raw/*.pdf → data/redacted/*.md
+│   ├── redact.py                     # CLI: data/raw/*.pdf → data/redacted/*.md
+│   ├── chunk.py                      # CLI: data/redacted/*.md → data/processed/chunks_*.jsonl
+│   └── build_gold_set.py             # Gemini generates candidates for review
 ├── eval/
 │   ├── gold_set.jsonl                # 50 Hebrew questions, anchor-based
-│   ├── build_gold_set.py             # Gemini generates candidates for review
 │   ├── run_eval.py                   # retrieval Hit@k/MRR over gold set
-│   └── results/
-│       ├── eval_fixed_size_500.json
-│       ├── eval_section_aware.json
-│       └── ablation_table.md
+│   ├── ablation_results.md
+│   ├── embedding_ablation_results.md
+│   └── answer_eval_gemini_results.md
 ├── tests/
 │   ├── conftest.py                   # fixtures (tiny MD corpus, 2 families)
 │   ├── test_chunking.py
@@ -120,7 +120,7 @@ insurance-rag/
 ├── build_index.py                    # reproducible index build entry point
 ├── pyproject.toml                    # editable install
 ├── requirements.txt
-├── report.md                         # → report.pdf
+├── docs/report.md                    # final report
 ├── README.md                         # exact run instructions
 └── .gitignore                        # data/raw/, indices/, __pycache__, *.pyc
 ```
@@ -128,8 +128,11 @@ insurance-rag/
 Index storage (gitignored, rebuilt by `build_index.py`):
 ```
 insurance-rag/indices/
-├── chroma_fixed_size/
-└── chroma_section_aware/
+└── chroma.sqlite3                    # Chroma PersistentClient root
+
+Collections:
+- insurance_fixed
+- insurance_section_aware
 ```
 
 ---
@@ -150,21 +153,16 @@ insurance-rag/indices/
 ### Standard `Chunk` shape (everywhere)
 ```python
 {
-    "chunk_id": "health_policy__sa__sec_03",   # {doc_id}__{strategy_abbrev}__{seq:03d}
-    "doc_id": "health_policy",
-    "text": "...",
-    "metadata": {
-        "source": "health_policy.pdf",
-        "page_start": 12,
-        "page_end": 13,
-        "section": "ניתוחים מיוחדים",
-        "family_id": "demo_family_001",
-        "strategy": "section_aware",
-        "policy_type": "בריאות"
-    }
+    "chunk_id": "demo_family_001_section_aware_health_policy_3",
+    "text": "passage: ...",
+    "source_doc": "health_policy",
+    "strategy": "section_aware",
+    "family_id": "demo_family_001",
+    "anchor": "...",                  # first 80 raw-text chars
+    "section": "## ניתוחים מיוחדים"   # None for fixed chunks
 }
 ```
-Strategy abbreviations: `sa` (section_aware), `fs500` / `fs300` / `fs700` (fixed_size by size).
+Strategy names in chunk metadata: `fixed` and `section_aware`.
 
 ### `answer()` return contract (implemented)
 ```python
@@ -200,14 +198,13 @@ For each `data/redacted/*.md`:
 
 Reproducibility:
 - Chunkers are deterministic (no randomness).
-- `torch.manual_seed(42)`, inference mode, no dropout.
-- ChromaDB `PersistentClient` with fixed path.
-- `build_index.py --reset` deletes `indices/` and rebuilds identically.
+- ChromaDB `PersistentClient` uses the fixed `indices/` path.
+- `build_collection()` deletes and recreates the target collection on each run.
 - `data/processed/*.jsonl` is the source of truth; deleting `indices/` is always safe.
 
 ### Phase 3 — Question answering (online)
 1. `retrieve(q, k=5, strategy, family_id)`:
-   - `Embedder.encode([q], is_query=True)` → applies `"query: "` prefix.
+   - `embed_query(q)` → applies `"query: "` prefix.
    - ChromaDB `collection.query(..., where={"family_id": family_id})`.
    - Returns top-k chunks with scores.
 2. `generate(q, chunks)`:
@@ -234,8 +231,9 @@ User: הקשר:
 - Documents/chunks → prefix `"passage: "`
 - Search queries → prefix `"query: "`
 
-`Embedder.encode(texts, is_query)` applies the correct prefix. Omitting/swapping prefixes
-silently degrades retrieval. Embedding dim = 1024, L2-normalized.
+`embed_query(text)` applies the query prefix; chunks already carry the passage prefix
+from `src.chunking`. Omitting/swapping prefixes silently degrades retrieval.
+Embedding dim = 1024, L2-normalized.
 
 ---
 
@@ -273,8 +271,8 @@ Optional stretch: dense vs hybrid (BM25 + dense via RRF) as a 5th row.
   "category": "numerical"
 }
 ```
-- Hit@k = at least one of the top-k retrieved chunks overlaps the anchor (page range or
-  section). Survives both chunking strategies → fair comparison.
+- Hit@k = at least one of the top-k retrieved chunk texts contains the gold anchor.
+  This survives both chunking strategies and supports fair comparison.
 
 ---
 
@@ -328,21 +326,21 @@ Three preconditions for the demo to work:
 | Docling fails on a PDF | `redact.py` exits code 2 for that file, continues to next |
 | Regex missed some PII | logged; **manual log review before submission** is the safety net |
 | Single heading section > ~2,800 chars | fixed-size fallback sub-chunking |
-| Empty/heading-only section | merge with section below |
+| Empty section | skipped; heading-only nonblank sections are kept as chunks |
 | Gemini 429 / rate limit | not retried in `src/generation.py`; retries exist in gold-set generation only |
 | Gemini answer without citations | sources still contain all retrieved anchors |
 | Empty/whitespace query | no dedicated early rejection in `answer()`; caller validation is future work |
 | Non-Hebrew query (Arabic/Russian) | e5 + Gemini are multilingual; behavior not guaranteed (documented as limitation) |
-| Two policies same name | doc_id gets short hash suffix: `health_policy_a3f2` |
-| Corrupt Chroma collection | `build_index.py --reset` rebuilds from `data/processed/` |
+| Two policies same stem | not specially handled; filenames must be unique in `data/redacted/` |
+| Corrupt Chroma collection | delete `indices/` or rerun `build_index.py`; each collection is recreated |
 
 ---
 
 ## 13. Testing strategy
 
 **Unit (pytest):**
-- `chunking`: word-boundary splits, overlap correctness, `##` detection, recursive
-  sub-split, determinism (same input → same output).
+- `chunking`: character-window splits, overlap correctness, `##` detection,
+  fixed-size fallback for oversized sections, determinism (same input → same output).
 - `redaction`: catches Israeli ID/phone/email, removes known string, log contains no PII.
 - `embedder`: shape (1024), L2-normalized, batching.
 - `indexer`: build/load Chroma collections, `where` filter metadata, persistent reload.
@@ -354,8 +352,8 @@ Three preconditions for the demo to work:
 
 **Determinism:** run `build_index.py` twice, assert `chunks_*.jsonl` hashes match.
 
-**Eval as the big test:** `eval/run_eval.py` produces Hit@5, MRR, and manual-review
-classification of ≥10 answers (Correct / Partial / Incorrect / Hallucinated).
+**Eval as the big test:** `eval/run_eval.py` produces Hit@k and MRR. Manual answer
+classification is recorded separately in the report and Gemini answer-eval artifacts.
 
 Not tested: LLM stability (Gemini not mocked — empirical via eval); Docling perf (one-time).
 
@@ -383,8 +381,7 @@ Step 8: Chat integration          → tool + demo_seeder + demo bypass (Phase 2)
 - `docling` — PDF → Markdown
 - `sentence-transformers` + `intfloat/multilingual-e5-large` — embeddings
 - `chromadb` — persistent vector store
-- `google-genai` (Gemini 2.5 Flash) — generation (already in backend)
-- `google-genai` — generation and gold-set candidate generation
+- `google-genai` (Gemini 2.5 Flash) — generation and gold-set candidate generation
 - `pytest` — tests
 - PyMuPDF (transitively via Docling) — note AGPL-3.0 license constraint
 

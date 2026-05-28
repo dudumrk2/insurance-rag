@@ -60,6 +60,7 @@ python scripts/redact.py                              # data/raw/*.pdf → data/
 
 # Step 2 — build vector indices
 pip install -e ".[embeddings,vectorstore,generation]"
+python scripts/chunk.py
 python build_index.py
 
 # Step 3 — run retrieval evaluation (ablation study)
@@ -70,8 +71,9 @@ pip install -e ".[server]"
 python server.py
 ```
 
-Run the fast test suite with `pip install -e ".[dev]" && pytest -m "not slow"`.
-For the full embedding-backed suite, install `.[all]` and run `pytest`.
+Run the fast non-server suite with `pytest -m "not slow" --ignore=tests/test_server.py`
+in an environment with the project test dependencies installed. Clean-environment
+dependency metadata cleanup is tracked separately from this docs update.
 
 ## Privacy
 
