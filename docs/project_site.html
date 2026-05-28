@@ -940,10 +940,14 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
           <h3>חולשות שנותרו</h3>
           <p>גם עם gemini, Q1+Q4 (חילוץ שורה מטבלה) עדיין נכשלים — קטעי <code>section_aware</code> חתוכים בגובה הכותרת ולא שומרים שורות טבלה</p>
         </div>
-        <div class="concl-card">
+        <div class="concl-card" style="border-color:rgba(129,140,248,0.35);">
           <div class="concl-icon">🔮</div>
           <h3>הצעד הבא</h3>
           <p>gemini כבר נתן +10%. <strong>Hybrid retrieval</strong> (BM25 + dense) או <strong>table-aware chunking</strong> יכולים לתפוס את שורות הטבלה הנותרות</p>
+          <a href="roadmap.html" style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:8px 16px;background:rgba(129,140,248,0.12);border:1px solid rgba(129,140,248,0.3);border-radius:8px;color:var(--accent);text-decoration:none;font-size:0.85rem;font-weight:600;transition:all 0.2s;"
+             onmouseover="this.style.background='rgba(129,140,248,0.22)'" onmouseout="this.style.background='rgba(129,140,248,0.12)'">
+            📋 מפת דרכים מלאה לשיפור ←
+          </a>
         </div>
       </div>
       <details style="margin-top:24px;">
