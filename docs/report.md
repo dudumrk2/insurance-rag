@@ -283,6 +283,51 @@ PDF
 
 ---
 
+## 8. מה הלאה — נתיבי שיפור
+
+מערכת הנוכחית מגיעה ל-**7/10 תשובות נכונות** עם `gemini-embedding-001` ול-Hit@5=0.800 בשליפה. שלושת הכשלים הנותרים (Q1, Q2, Q4) הם כולם שאלות מספריות מטבלאות — כשל שיטתי ולא אקראי.
+
+### 8.1 ניתוח שורש הכשלים
+
+שיטת ה-`section_aware` חותכת לפי כותרות Markdown, כך שכל טבלה הופכת ל-chunk אחד של עד 2,800 תווים. שורות בודדות בתוך הטבלה אינן ניתנות לשליפה בנפרד — Dense embedding "מאבד" ערכים כמו `58 ש"ח` לתוך הרעש הסמנטי של הסעיף כולו.
+
+### 8.2 שיפורים לפי עלות-תועלת
+
+**שכבה 1 — שינויי Prompt (שעות):**
+
+| שיפור | תועלת עיקרית |
+|---|---|
+| תיוג `[מסמך, סעיף]` לפני כל chunk ב-context | ציטוטים ניתנים לאימות |
+| הוראת refusal: "אם לא נמצא במפורש — אמור כך" | הפחתת hallucination |
+| פלט JSON מובנה (`answer`, `evidence_quote`, `cannot_answer`) | traceability מלא |
+
+**שכבה 2 — שיפור שליפה (ימים):**
+
+| שיפור | תועלת עיקרית |
+|---|---|
+| **Hybrid BM25 + Dense** (מיזוג via RRF) | מספרים וביטויים מדויקים — ROI גבוה ביותר |
+| Similarity threshold לפני Generation | מניעת קריאת Gemini כשהשליפה חלשה |
+| Cross-encoder Reranker (top-20 → top-5) | שיפור Hit@1 |
+
+**שכבה 3 — שינוי ארכיטקטורה (שבוע):**
+
+**Table-aware chunking** — הפתרון השורשי ל-Q1/Q2/Q4. כל שורת טבלה הופכת ל-chunk עצמאי עם header context חוזר:
+
+```python
+# לפני: chunk אחד לכל הטבלה
+# אחרי: chunk לכל שורה
+"פרמיות / פנסים ומראות צד: 58 ש"ח"   # retrievable ישירות
+"פרמיות / גוף הרכב: 1,200 ש"ח"
+```
+
+### 8.3 נתיב מומלץ
+
+שיפורי Prompt (שכבה 1) + BM25 Hybrid (שכבה 2) ניתנים למימוש תוך יום-יומיים ועשויים להביא את המערכת ל-8–9/10 על אותן 10 שאלות. Table-aware chunking הוא הפתרון הנכון לטווח הרחוק לכלל שאלות הטבלאות.
+
+פירוט מלא עם code snippets, before/after diffs, וטבלת עדיפויות: [`docs/roadmap.html`](https://dudumrk2.github.io/insurance-rag/roadmap.html)
+
+---
+
 ## נספח — הרצה, קישורים והסברים נוספים
 
 ### א. הרצת ה-`Pipeline` מקצה לקצה
@@ -313,7 +358,7 @@ python build_index.py
 
 # 6. בניית Gold Set (ייצור 75 מועמדים + בחירה ידנית של 50)
 python scripts/build_gold_set.py --out eval/gold_set_candidates.jsonl
-#    פתח eval/selector.html בדפדפן → בחר 50 שאלות → שמור ל-eval/gold_set.jsonl
+#    פתח docs/selector.html בדפדפן → בחר 50 שאלות → שמור ל-eval/gold_set.jsonl
 
 # 7. הרצת Ablation Study (כולל fixed_300 ו-fixed_700 — ~45 דקות CPU)
 python eval/run_eval.py --out eval/ablation_results.md
@@ -345,7 +390,7 @@ python -m pytest -q -m "not slow" --ignore=tests/test_server.py
 | `src/redaction.py` | הסרת PII (‏`regex` + מחרוזות ידועות) | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/src/redaction.py) |
 | `build_index.py` | ‏CLI לבניית `indexes` ב-`ChromaDB` | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/build_index.py) |
 | `scripts/build_gold_set.py` | ייצור 75 מועמדים ע"י `Gemini` | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/scripts/build_gold_set.py) |
-| `eval/selector.html` | כלי HTML אינטראקטיבי לבחירת 50 שאלות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/selector.html) |
+| `docs/selector.html` | כלי HTML אינטראקטיבי לבחירת 50 שאלות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/docs/selector.html) |
 | `eval/run_eval.py` | ניסוי ההשחלפה — Hit@k ו-MRR | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/run_eval.py) |
 | `eval/gold_set.jsonl` | 50 שאלות הזהב הסופיות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/gold_set.jsonl) |
 | `eval/ablation_results.md` | תוצאות ניסוי ההשחלפה | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/ablation_results.md) |
