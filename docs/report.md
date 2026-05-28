@@ -313,7 +313,7 @@ python build_index.py
 
 # 6. בניית Gold Set (ייצור 75 מועמדים + בחירה ידנית של 50)
 python scripts/build_gold_set.py --out eval/gold_set_candidates.jsonl
-#    פתח eval/selector.html בדפדפן → בחר 50 שאלות → שמור ל-eval/gold_set.jsonl
+#    פתח docs/selector.html בדפדפן → בחר 50 שאלות → שמור ל-eval/gold_set.jsonl
 
 # 7. הרצת Ablation Study (כולל fixed_300 ו-fixed_700 — ~45 דקות CPU)
 python eval/run_eval.py --out eval/ablation_results.md
@@ -345,7 +345,7 @@ python -m pytest -q -m "not slow" --ignore=tests/test_server.py
 | `src/redaction.py` | הסרת PII (‏`regex` + מחרוזות ידועות) | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/src/redaction.py) |
 | `build_index.py` | ‏CLI לבניית `indexes` ב-`ChromaDB` | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/build_index.py) |
 | `scripts/build_gold_set.py` | ייצור 75 מועמדים ע"י `Gemini` | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/scripts/build_gold_set.py) |
-| `eval/selector.html` | כלי HTML אינטראקטיבי לבחירת 50 שאלות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/selector.html) |
+| `docs/selector.html` | כלי HTML אינטראקטיבי לבחירת 50 שאלות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/docs/selector.html) |
 | `eval/run_eval.py` | ניסוי ההשחלפה — Hit@k ו-MRR | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/run_eval.py) |
 | `eval/gold_set.jsonl` | 50 שאלות הזהב הסופיות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/gold_set.jsonl) |
 | `eval/ablation_results.md` | תוצאות ניסוי ההשחלפה | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/ablation_results.md) |
