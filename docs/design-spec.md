@@ -53,7 +53,7 @@ generic Wikipedia-style corpus" requirement.
 ### Out of scope (noted as "future work" in report)
 - Cross-encoder reranking
 - Hybrid (BM25 + dense) retrieval — optional stretch ablation only
-- Upload→index live hook in `InsuranceFlow` (marked TODO)
+- Upload→index live hook in `InsuranceFlow` (future integration work)
 
 ---
 
