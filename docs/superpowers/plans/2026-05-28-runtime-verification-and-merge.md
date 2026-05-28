@@ -1,8 +1,8 @@
-# Runtime Verification And Merge Implementation Plan
+# Runtime Verification And PR Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Verify the updated `insurance-rag` repository end to end, then merge or open a PR for `docs/align-current-system-status`.
+**Goal:** Verify the updated `insurance-rag` repository end to end, then create a PR for `docs/align-current-system-status`. Do not merge; this user can push branches and open PRs only.
 
 **Architecture:** Treat `docs/align-current-system-status` as a docs/metadata accuracy branch and verify it against the current runtime. Validate in layers: repository state, dependency metadata, tests, Flask server, `/ask` API behavior, and optional embedding/eval paths.
 
@@ -270,7 +270,7 @@ python -B -c "from src.generation import answer; res=answer('מה הפרנשיי
 
 Expected: Hebrew answer text and at least one retrieved source anchor.
 
-### Task 7: Merge Or Open PR
+### Task 7: Create PR Only
 
 **Files:**
 - Read: `README.md`
