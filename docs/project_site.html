@@ -1128,6 +1128,16 @@ const API = window.location.protocol === 'file:'
   ? 'http://localhost:5000/ask'
   : '/ask';
 
+// Warm up the server in the background as soon as the page loads
+(async () => {
+  try {
+    const warmupAPI = API.replace('/ask', '/warmup');
+    fetch(warmupAPI, { method: 'POST' }).catch(() => {});
+  } catch (e) {
+    // Ignore warmup errors
+  }
+})();
+
 async function askQuestion() {
   const q = document.getElementById('q-input').value.trim();
   if (!q) return;
