@@ -71,5 +71,5 @@ def test_warmup_returns_warming_up(client, monkeypatch):
     resp = client.post("/warmup")
     assert resp.status_code == 200
     data = resp.get_json()
-    assert data["status"] == "warming_up"
+    assert data["status"] == "warmed_up"
 

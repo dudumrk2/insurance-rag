@@ -75,9 +75,10 @@ def _do_warmup():
 
 @app.route("/warmup", methods=["GET", "POST"])
 def warmup():
-    import threading
-    threading.Thread(target=_do_warmup).start()
-    return jsonify({"status": "warming_up"}), 200
+    # Run synchronously so that Cloud Run keeps the CPU active (unthrottled)
+    # while the model and database are loading.
+    _do_warmup()
+    return jsonify({"status": "warmed_up"}), 200
 
 
 if __name__ == "__main__":
