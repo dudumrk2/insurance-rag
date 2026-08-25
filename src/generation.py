@@ -120,7 +120,7 @@ def answer(
         doc_name = chunk.get("source_doc", "unknown")
         section = chunk.get("section") or "כללי"
         context_parts.append(f"[מסמך: {doc_name}, סעיף: {section}]\n{text}")
-        
+
     context = "\n\n".join(context_parts)
 
     # Build prompt and generate answer. The generator may return None (e.g. a
