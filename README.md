@@ -1,82 +1,98 @@
-# Insurance Policy RAG
+# Insurance RAG: Hebrew Policy Retrieval System
 
-A Retrieval-Augmented Generation (RAG) pipeline over a corpus of Hebrew insurance
-policies. Built for a course mid-term assignment, designed to also plug into the
-`ai-wealth-monitor` application later.
+A full Retrieval-Augmented Generation (RAG) pipeline designed for Hebrew insurance policies. The system parses complex PDF documents (such as car and health insurance policies), cleanses PII (Personally Identifiable Information), chunks the text using structure-aware strategies, retrieves accurate segments via dense embeddings, and generates precise, grounded answers. 
+
+![Project Overview](docs/roadmap.html) *(See the [Live Roadmap & Architecture](https://dudumrk2.github.io/insurance-rag/roadmap.html))*
 
 > **Status:** Complete — ingestion, chunking, embeddings, retrieval, generation, evaluation, and Flask demo are all implemented.
 
-## What this is
+> [!NOTE]  
+> A detailed technical report (in Hebrew) covering the methodology, ablation studies, and evaluation is available in [`docs/report.md`](docs/report.md). The original Hebrew README is available in [`README.he.md`](README.he.md).
 
-Ask natural-language questions about insurance policies (coverage limits, deductibles,
-exclusions, waiting periods, renewal dates) and get answers grounded in the policy text,
-with retrieved source anchors for auditability.
+## Core Architecture
 
-Public interface:
-
-```python
-answer(question: str) -> dict
-# → {"answer": str, "sources": list[str], "strategy": str, "question": str}
+```text
+PDF
+ └─► Docling ──► Markdown ──► Redaction ──► data/redacted/*.md
+                                                    │
+                              ┌─────────────────────┤
+                              ▼                     ▼
+                         chunk_fixed         chunk_section_aware
+                         (500/300/700 chars)  (≤2,800 chars/section)
+                              │                     │
+                              └──────────┬──────────┘
+                                         ▼
+                              multilingual-e5-large
+                              (1024-dim, "passage: " prefix)
+                                         │
+                                         ▼
+                                  ChromaDB
+                              (cosine similarity, family_id filter)
+                                         │
+                                         ▼
+                              retrieve(query, top_k=5)
+                                         │
+                                         ▼
+                              Gemini 2.5 Flash
+                              (Hebrew system prompt, T=0.2)
+                                         │
+                                         ▼
+                              answer + retrieved anchors
 ```
 
-> **Known gap:** `sources` contains all retrieved chunk anchors, not model-selected citations.
-> Returning `retrieved_chunks` with per-chunk metadata is a documented future improvement.
+## Results & Ablation Study
 
-## Documentation
+An ablation study was performed against a carefully curated 50-question "Gold Set". It demonstrated that **structure-aware chunking (`section_aware`) significantly outperforms fixed-size windows**. By dividing text according to natural markdown headers, the system preserves the semantic integrity of legal clauses and limits.
 
-Start here — the design and the reasoning behind it:
+### Chunking Strategy Comparison
 
-- [`docs/report.md`](docs/report.md) — **current implementation truth**: final pipeline,
-  evaluation results, known gaps, and reproducible run steps.
-- [`docs/design-spec.md`](docs/design-spec.md) — **historical design spec**: original
-  architecture plan; now annotated where the final implementation differs.
-- [`docs/DESIGN_RATIONALE.md`](docs/DESIGN_RATIONALE.md) — **the why**: the decision
-  journey, alternatives we weighed, final implementation notes, and a primer on the RAG concepts used
-  (e5 prefixes, dense vs BM25 vs hybrid, bi-encoder vs cross-encoder reranking).
-- [`docs/mid_term_assignment.pdf`](docs/mid_term_assignment.pdf) — the original
-  assignment brief.
+| Configuration | Segments | Hit@1 | Hit@3 | Hit@5 | MRR |
+|---|---|---|---|---|---|
+| **`section_aware`** | 447 | **0.380** | **0.660** | **0.740** | **0.529** |
+| `fixed_500` | 944 | 0.060 | 0.220 | 0.300 | 0.139 |
+| `fixed_300` | 1,700 | 0.160 | 0.220 | 0.280 | 0.196 |
+| `fixed_700` | 656 | 0.080 | 0.180 | 0.260 | 0.138 |
 
-## Stack
+### Embedding Model Comparison
+Tested on the `section_aware` strategy. Note: The `gemini-embedding-001` variant leverages asymmetric task types instead of the E5 prefixing logic.
 
-- `docling` — PDF → Markdown
-- `sentence-transformers` + `intfloat/multilingual-e5-large` — embeddings
-- `chromadb` — persistent vector store
-- `google-genai` (Gemini 2.5 Flash) — answer generation and gold-set candidate generation
-- `pytest` — tests
+| Model | Dimensions | Hit@5 | MRR | Correctness (10 sampled Qs) |
+|---|---|---|---|---|
+| **`gemini-embedding-001`** | 768 | **0.800** | **0.615** | **70%** |
+| `multilingual-e5-large` | 1024 | 0.720 | 0.534 | 60% |
 
-## Running
+## Getting Started
 
-Each build step needs only its own dependencies (the full stack pulls PyTorch
-~2GB). Install incrementally:
+### Prerequisites
+- Python >=3.10
+- A Gemini API Key (set via `.env`)
 
-```bash
-python -m venv .venv && source .venv/Scripts/activate   # Windows; use bin/activate on *nix
+### Installation & Run
 
-# Step 1 — redaction (PDF → redacted Markdown)
-pip install -e ".[pdf]"
-cp data/known_pii.example.json data/known_pii.json   # then fill in real names/IDs (gitignored)
-python scripts/redact.py                              # data/raw/*.pdf → data/redacted/*.md + log
-#   → review data/redaction_log.json before committing
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/dudumrk2/insurance-rag.git
+   cd insurance-rag
+   ```
 
-# Step 2 — build vector indices
-pip install -e ".[embeddings,vectorstore,generation]"
-python scripts/chunk.py
-python build_index.py
+2. **Create a virtual environment and install dependencies:**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install -e ".[all]"
+   ```
 
-# Step 3 — run retrieval evaluation (ablation study)
-python eval/run_eval.py
+3. **Set up environment variables:**
+   Create a `.env` file in the root directory:
+   ```bash
+   GEMINI_API_KEY=your_gemini_api_key
+   ```
 
-# Step 4 — start the Flask demo server
-pip install -e ".[server]"
-python server.py
-```
+4. **Run the CLI to test the pipeline:**
+   ```python
+   from src.generation import answer
+   result = answer('מה הפרנשייז על נזק מלא לרכב?', strategy='section_aware')
+   print(result['answer'])
+   ```
 
-Run the fast non-server suite with `pytest -m "not slow" --ignore=tests/test_server.py`
-in an environment with the project test dependencies installed. Clean-environment
-dependency metadata cleanup is tracked separately from this docs update.
-
-## Privacy
-
-The corpus is built from real personal insurance policies. **Raw PDFs
-(`data/raw/`) are gitignored and never committed.** Only PII-redacted Markdown
-(`data/redacted/`) enters version control. See the redaction section of the design spec.
+To re-run the entire pipeline (PDF parsing -> Redaction -> Indexing -> Evaluation), follow the detailed command list in the [Report Appendix A](docs/report.md#א-הרצת-ה-pipeline-מקצה-לקצה).
