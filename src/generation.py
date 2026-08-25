@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 
-from src.config import DEFAULT_FAMILY_ID, DEFAULT_TOP_K
+from src.config import DEFAULT_FAMILY_ID, DEFAULT_TOP_K, SIMILARITY_THRESHOLD
 from src.retrieval import retrieve
 from src.utils import get_logger
 
@@ -104,9 +104,24 @@ def answer(
         top_k=top_k,
     )
 
+    # Similarity threshold check
+    if chunks and chunks[0]["score"] < SIMILARITY_THRESHOLD:
+        return {
+            "answer": "המידע לא נמצא בפוליסה שסופקה.",
+            "sources": [],
+            "strategy": strategy,
+            "question": question,
+        }
+
     # Build context from chunks (strip "passage: " prefix)
-    context_parts = [chunk["text"].removeprefix("passage: ") for chunk in chunks]
-    context = "\n".join(context_parts)
+    context_parts = []
+    for chunk in chunks:
+        text = chunk["text"].removeprefix("passage: ")
+        doc_name = chunk.get("source_doc", "unknown")
+        section = chunk.get("section") or "כללי"
+        context_parts.append(f"[מסמך: {doc_name}, סעיף: {section}]\n{text}")
+        
+    context = "\n\n".join(context_parts)
 
     # Build prompt and generate answer. The generator may return None (e.g. a
     # Gemini safety block), so fall back to a fixed message to honor the
@@ -135,7 +150,11 @@ def _build_prompt(question: str, context: str) -> str:
     Returns:
         A formatted prompt string.
     """
-    system_message = "אתה עוזר המתמחה בפוליסות ביטוח. ענה בעברית בלבד על בסיס ההקשר שסופק."
+    system_message = (
+        "אתה עוזר המתמחה בפוליסות ביטוח. ענה בעברית בלבד.\n"
+        "אם המידע אינו מופיע במפורש בהקשר שסופק — ענה: 'המידע לא נמצא בפוליסה שסופקה.'\n"
+        "אל תשער, אל תמציא מספרים."
+    )
     user_message = f"הקשר:\n{context}\n\nשאלה: {question}"
 
     return f"System: {system_message}\n\nUser: {user_message}"

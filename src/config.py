@@ -44,3 +44,4 @@ DEFAULT_FAMILY_ID = "demo_family_001"
 
 # --- Retrieval (used from Step 4) ------------------------------------------
 DEFAULT_TOP_K = 5
+SIMILARITY_THRESHOLD = 0.35
