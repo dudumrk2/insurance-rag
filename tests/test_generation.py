@@ -204,6 +204,85 @@ def test_context_includes_question():
     assert q in captured_prompt
 
 
+def test_context_includes_document_and_section_labels():
+    """Context passed to generator includes document and section metadata labels."""
+    captured_prompt = None
+
+    def capture_prompt(prompt: str) -> str:
+        nonlocal captured_prompt
+        captured_prompt = prompt
+        return "דמה תשובה"
+
+    answer(
+        question="מה כוסה?",
+        _retrieve_fn=_fake_retrieve_fn,
+        _generate_fn=capture_prompt,
+    )
+
+    assert captured_prompt is not None
+    assert "[מסמך: policy_1.md, סעיף: ## כיסויים]" in captured_prompt
+    assert "[מסמך: policy_1.md, סעיף: ## דמי השתתפות]" in captured_prompt
+
+
+def test_system_prompt_includes_refusal_instructions():
+    """System message includes strict refusal and no-hallucination instructions."""
+    captured_prompt = None
+
+    def capture_prompt(prompt: str) -> str:
+        nonlocal captured_prompt
+        captured_prompt = prompt
+        return "דמה תשובה"
+
+    answer(
+        question="מה כוסה?",
+        _retrieve_fn=_fake_retrieve_fn,
+        _generate_fn=capture_prompt,
+    )
+
+    assert captured_prompt is not None
+    assert "אם המידע אינו מופיע במפורש בהקשר שסופק — ענה: 'המידע לא נמצא בפוליסה שסופקה.'" in captured_prompt
+    assert "אל תשער, אל תמציא מספרים." in captured_prompt
+
+
+# ---------------------------------------------------------------------------
+# Tests: Similarity Threshold
+# ---------------------------------------------------------------------------
+
+
+def test_low_similarity_score_triggers_refusal_without_generator_call():
+    """When top retrieved chunk score is below SIMILARITY_THRESHOLD, return refusal and empty sources."""
+    generator_called = False
+
+    def fake_low_score_retrieve(query: str, **kwargs) -> list[dict]:
+        return [
+            {
+                "chunk_id": "chunk_low",
+                "text": "passage: תוכן לא רלוונטי בכלל",
+                "source_doc": "policy_1.md",
+                "score": 0.20,  # Below 0.35 threshold
+                "anchor": "תוכן לא רלוונטי",
+                "section": "## שונות",
+                "family_id": "demo_family_001",
+            }
+        ]
+
+    def record_generator(prompt: str) -> str:
+        nonlocal generator_called
+        generator_called = True
+        return "תשובה שלא צריכה להיקרא"
+
+    result = answer(
+        question="שאלה לא קשורה?",
+        _retrieve_fn=fake_low_score_retrieve,
+        _generate_fn=record_generator,
+    )
+
+    assert generator_called is False
+    assert result["answer"] == "המידע לא נמצא בפוליסה שסופקה."
+    assert result["sources"] == []
+    assert result["question"] == "שאלה לא קשורה?"
+
+
 # ---------------------------------------------------------------------------
 # Tests: Graceful Degradation
 # ---------------------------------------------------------------------------
