@@ -32,3 +32,8 @@ serviceAccountKey.json
 Thumbs.db
 .idea/
 .vscode/
+
+# Local Eval Logs and Scratch Files
+eval/*.log
+eval/*.jsonl
+*.html
