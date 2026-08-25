@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html dir="ltr" lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מערכת RAG לפוליסות ביטוח בעברית</title>
+<title>Hebrew Insurance Policies RAG System</title>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&display=swap" rel="stylesheet">
 <style>
 /* ── Reset & Variables ─────────────────────────────────── */
@@ -27,7 +27,7 @@ body {
   color: var(--text);
   font-family: var(--font);
   line-height: 1.7;
-  direction: rtl;
+  direction: ltr;
   background-image:
     radial-gradient(circle at 15% 50%, rgba(129, 140, 248, 0.06) 0%, transparent 50%),
     radial-gradient(circle at 85% 30%, rgba(52, 211, 153, 0.04) 0%, transparent 50%);
@@ -210,7 +210,7 @@ nav a:hover { background: var(--bg-card); color: var(--text); }
 
 /* ── Table ──────────────────────────────────────────────── */
 .data-table { width: 100%; border-collapse: collapse; margin-top: 24px; }
-.data-table th { background: var(--bg-card2); padding: 12px 16px; text-align: right; font-size: 0.85rem; color: var(--muted); border-bottom: 1px solid var(--border); }
+.data-table th { background: var(--bg-card2); padding: 12px 16px; text-align: left; font-size: 0.85rem; color: var(--muted); border-bottom: 1px solid var(--border); }
 .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 .data-table tr:last-child td { border-bottom: none; }
 code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7px; border-radius: 4px; font-size: 0.85em; }
@@ -331,7 +331,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
 
 /* ── Results table ──────────────────────────────────────── */
 .results-table { width: 100%; border-collapse: collapse; margin: 28px 0 0; }
-.results-table th { background: var(--bg-card2); padding: 12px 16px; text-align: right; font-size: 0.85rem; color: var(--muted); border-bottom: 1px solid var(--border); }
+.results-table th { background: var(--bg-card2); padding: 12px 16px; text-align: left; font-size: 0.85rem; color: var(--muted); border-bottom: 1px solid var(--border); }
 .results-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 .results-table tr.best td { background: rgba(129,140,248,0.07); font-weight: 600; }
 .results-table tr.best td:first-child { color: var(--accent); }
@@ -433,7 +433,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
   color: var(--text);
   font-size: 1rem;
   font-family: var(--font);
-  direction: rtl;
+  direction: ltr;
   margin-bottom: 16px;
   transition: border-color 0.2s;
 }
@@ -490,7 +490,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
   padding: 3px 10px;
   font-size: 0.75rem;
   margin: 2px;
-  direction: rtl;
+  direction: ltr;
 }
 .demo-error {
   display: none;
@@ -519,33 +519,32 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
 <body>
 
 <nav>
-  <a href="#why">הרקע</a>
-  <a href="#data">הנתונים</a>
-  <a href="#arch">ארכיטקטורה</a>
-  <a href="#chunking">חלוקה</a>
-  <a href="#goldset">קבוצת הזהב</a>
-  <a href="#results">תוצאות</a>
-  <a href="#faq">תובנות ו-FAQ</a>
-  <a href="#run">הרצה</a>
-  <a href="#demo">דמו חי</a>
-  <a href="demo_showcase_en.html" style="margin-right:auto;color:var(--text);border:1px solid var(--border);background:var(--bg-card);">English 🌐</a>
-  <a href="https://github.com/dudumrk2/insurance-rag" target="_blank" style="color:var(--accent);border:1px solid rgba(129,140,248,0.3);background:rgba(129,140,248,0.08);">GitHub ↗</a>
+  <a href="#why">Background</a>
+  <a href="#data">Data</a>
+  <a href="#arch">Architecture</a>
+  <a href="#chunking">Chunking</a>
+  <a href="#goldset">Gold Set</a>
+  <a href="#results">Results</a>
+  <a href="#faq">Insights & FAQ</a>
+  <a href="#run">Run</a>
+  <a href="#demo">Live Demo</a>
+  <a href="https://github.com/dudumrk2/insurance-rag" target="_blank" style="margin-left:auto;color:var(--accent);border:1px solid rgba(129,140,248,0.3);background:rgba(129,140,248,0.08);">GitHub ↗</a>
 </nav>
 
 <!-- HERO -->
 <div id="hero">
   <div class="hero-tag">Methodological RAG System · Ablation Validated · Hebrew FinTech</div>
-  <h1 class="hero-title">מערכת RAG לפוליסות<br>ביטוח בעברית</h1>
-  <p class="hero-sub">שליפה מוגברת-ייצור על קורפוס פוליסות ביטוח ישראליות —<br>מ-PDF גולמי ועד תשובה מנומקת עם ציטוטים מדויקים</p>
+  <h1 class="hero-title">Hebrew Insurance Policies<br>RAG System</h1>
+  <p class="hero-sub">Retrieval-Augmented Generation on a corpus of Israeli insurance policies —<br>from raw PDF to grounded answer with precise citations</p>
   <div class="hero-stats">
     <div class="stat-chip"><span class="val">0.740</span><span class="lbl">Hit@5</span></div>
     <div class="stat-chip"><span class="val">0.529</span><span class="lbl">MRR</span></div>
-    <div class="stat-chip"><span class="val">50</span><span class="lbl">שאלות זהב</span></div>
-    <div class="stat-chip"><span class="val">4</span><span class="lbl">פוליסות</span></div>
+    <div class="stat-chip"><span class="val">50</span><span class="lbl">Gold Questions</span></div>
+    <div class="stat-chip"><span class="val">4</span><span class="lbl">Policies</span></div>
   </div>
   <div class="hero-btns">
-    <a href="#results" class="btn btn-primary">ראה תוצאות</a>
-    <a href="#demo" class="btn btn-outline">דמו חי</a>
+    <a href="#results" class="btn btn-primary">See Results</a>
+    <a href="#demo" class="btn btn-outline">Live Demo</a>
     <a href="https://github.com/dudumrk2/insurance-rag" target="_blank" class="btn btn-outline">GitHub ↗</a>
   </div>
 </div>
@@ -555,8 +554,8 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
 <section id="abstract" style="padding-bottom:40px;">
   <div class="reveal">
     <div class="abstract-box glass">
-      <h2 class="section-title">ארכיטקטורה ו<span>פתרון מערכתי</span></h2>
-      <p>מערכת Retrieval-Augmented Generation (RAG) לקורפוס פוליסות ביטוח מורכבות בעברית. המערכת כוללת חלוקה חכמה מודעת מבנה חוזי (<code>section_aware</code>) ושליפה וקטורית מבוססת E5 מול ChromaDB.</p>
+      <h2 class="section-title">Architecture ו<span>פתרון מערכתי</span></h2>
+      <p>מערכת Retrieval-Augmented Generation (RAG) לקורפוס פוליסות ביטוח מורכבות בעברית. המערכת כוללת Chunking חכמה מודעת מבנה חוזי (<code>section_aware</code>) ושליפה וקטורית מבוססת E5 מול ChromaDB.</p>
     </div>
   </div>
 </section>
@@ -570,8 +569,8 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
     <div class="cards cards-2">
       <div class="card">
         <div class="card-icon">🎯</div>
-        <h3>שליפה מבוססת ראיות</h3>
-        <p>התמודדות עם תשובות מורכבות: שליפת סעיפי החרגה, השתתפות עצמית ותתי-גבולות כיסוי מתוך המסמך המקורי, תוך מתודולוגיה שקופה למדידת ביצועים ותיעוד מגבלות.</p>
+        <h3>Evidence-Based Retrieval</h3>
+        <p>Dealing with complex answers: retrieving exclusion clauses, deductibles, and sub-limits from the original document, with a transparent methodology for measuring performance and documenting limitations.</p>
       </div>
       <div class="card">
         <div class="card-icon">🚀</div>
@@ -589,7 +588,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
 <!-- DATA -->
 <section id="data">
   <div class="reveal">
-    <h2 class="section-title">הנתונים ו<span>עיבוד מקדים</span></h2>
+    <h2 class="section-title">Data ו<span>עיבוד מקדים</span></h2>
     <p class="section-sub">4 פוליסות PDF דיגיטליות → Markdown נקי → ChromaDB</p>
     <table class="data-table">
       <thead><tr><th>מסמך</th><th>סוג</th><th>גודל</th><th>הערות</th></tr></thead>
@@ -607,7 +606,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <div class="tl-arrow">←</div>
       <div class="tl-step"><div class="tl-icon">🔒</div><div class="tl-label">הסרת<br>PII</div></div>
       <div class="tl-arrow">←</div>
-      <div class="tl-step"><div class="tl-icon">✂️</div><div class="tl-label">חלוקה<br>לקטעים</div></div>
+      <div class="tl-step"><div class="tl-icon">✂️</div><div class="tl-label">Chunking<br>לקטעים</div></div>
       <div class="tl-arrow">←</div>
       <div class="tl-step"><div class="tl-icon">🧠</div><div class="tl-label">הטמעות<br>e5-large</div></div>
       <div class="tl-arrow">←</div>
@@ -631,7 +630,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <div class="card glass">
         <div class="card-icon">✨</div>
         <h3>ייצור (Generation)</h3>
-        <p><code>Gemini 2.5 Flash</code> עם <code>temperature=0.2</code>. ה-prompt מחולק לשכבת system ("ענה בעברית בלבד על בסיס ההקשר") ושכבת user עם ההקשר. המקורות המוחזרים הם anchors של הקטעים שנשלפו, לא citations שהמודל בחר.</p>
+        <p><code>Gemini 2.5 Flash</code> עם <code>temperature=0.2</code>. ה-prompt מחולק לשכבת system ("ענה בעברית בלבד על בסיס ההקשר") ושכבת user עם ההקשר. הSources המוחזרים הם anchors של הקטעים שנשלפו, לא citations שהמודל בחר.</p>
       </div>
     </div>
     <div class="pipeline">
@@ -672,8 +671,8 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       </div>
     </div>
     <div style="margin-top:20px;text-align:center;color:var(--muted);font-size:0.9rem;">
-      🧪 שלב 5 (ההטמעות) נחקר ב-<a href="#faq" style="color:var(--accent);text-decoration:none;">ניסוי השחלפה</a> —
-      <code>gemini-embedding-001</code> עלה ב-<strong style="color:var(--accent);">+11% Hit@5</strong> בשליפה ו-<strong style="color:var(--accent);">+10% Correctness</strong> בתשובות
+      🧪 Phase 5 (Embeddings) was explored in the <a href="#faq" style="color:var(--accent);text-decoration:none;">Substitution Experiment</a> —
+      <code>gemini-embedding-001</code> improved <strong style="color:var(--accent);">+11% Hit@5</strong> in retrieval and <strong style="color:var(--accent);">+10% Correctness</strong> in answers
     </div>
   </div>
 </section>
@@ -682,18 +681,18 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
 <!-- ROADMAP -->
 <section id="roadmap">
   <div class="reveal">
-    <h2 class="section-title">מפת דרכים / <span>מה הלאה</span></h2>
-    <p class="section-sub">יכולות מתוכננות לשיפור הדיוק בשאלות מספריות (בהתבסס על ניתוח הכשלים בדוח)</p>
+    <h2 class="section-title">Roadmap / <span>What's Next</span></h2>
+    <p class="section-sub">Planned capabilities to improve accuracy on numerical questions (based on error analysis)</p>
     <div class="cards cards-2">
       <div class="card">
         <div class="card-icon">🛡️</div>
-        <h3>שכבה 1: שיפורי Prompt ומניעת הזיות</h3>
-        <p>מתוכנן: תיוג <code>[מסמך, סעיף]</code> לפני כל קטע (לשם ציטוט מדויק), פלט JSON מובנה, והוראת סירוב כדי למנוע המצאות (Hallucination Guardrails) כשהמידע אינו בנמצא.</p>
+        <h3>Layer 1: Prompt Improvements & Hallucination Guardrails</h3>
+        <p>Planned: Tagging <code>[Document, Section]</code> before each chunk (for precise citation), structured JSON output, and refusal instructions to prevent hallucinations when information is missing.</p>
       </div>
       <div class="card">
         <div class="card-icon">🔍</div>
-        <h3>שכבה 2: שליפה היברידית ו-Reranking</h3>
-        <p>מתוכנן: שילוב מנגנון שליפה היברידי (BM25 + Dense) דרך RRF לשיפור איתור מספרים מתוך טבלאות, ומודל Cross-Encoder Reranking לדירוג סופי של התוצאות.</p>
+        <h3>Layer 2: Hybrid Retrieval & Reranking</h3>
+        <p>מתוכנן: שילוב מנגנון שליפה היברידי (BM25 + Dense) דרך RRF לשיפור איתור מספרים מתוך טבלאות, ומודל Cross-Encoder Reranking לדירוג סופי של הResults.</p>
       </div>
     </div>
   </div>
@@ -704,8 +703,8 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
 <!-- CHUNKING -->
 <section id="chunking">
   <div class="reveal">
-    <h2 class="section-title">שתי <span>אסטרטגיות חלוקה</span></h2>
-    <p class="section-sub">ההשערה: חלוקה לפי סעיפים טבעיים תנצח חלוקה מכנית</p>
+    <h2 class="section-title">שתי <span>אסטרטגיות Chunking</span></h2>
+    <p class="section-sub">ההשערה: Chunking לפי סעיפים טבעיים תנצח Chunking מכנית</p>
     <div class="chunk-compare">
       <div class="chunk-box bad">
         <h4>fixed_size</h4>
@@ -778,7 +777,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
 <!-- RESULTS -->
 <section id="results">
   <div class="reveal">
-    <h2 class="section-title">תוצאות <span>ניסוי ההשחלפה</span></h2>
+    <h2 class="section-title">Results <span>ניסוי ההשחלפה</span></h2>
     <p class="section-sub">4 תצורות × 50 שאלות × top_k=5</p>
     <table class="results-table">
       <thead><tr><th>תצורה</th><th>קטעים</th><th>Hit@1</th><th>Hit@3</th><th>Hit@5</th><th>MRR</th></tr></thead>
@@ -790,7 +789,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       </tbody>
     </table>
     <div class="bar-chart">
-      <h4>Hit@5 — שיעור שאלות עם קטע נכון בתוצאות top-5</h4>
+      <h4>Hit@5 — שיעור שאלות עם קטע נכון בResults top-5</h4>
       <div class="bar-row">
         <div class="bar-label">section_aware</div>
         <div class="bar-wrap"><div class="bar-fill accent" style="width:74%">74%</div></div>
@@ -813,7 +812,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       </div>
     </div>
     <div class="bar-chart" style="margin-top:24px;">
-      <h4>MRR — ממוצע הדדי של הדירוג (גבוה יותר = קרוב יותר למקום 1)</h4>
+      <h4>MRR — Mean Reciprocal Rank (higher = closer to 1st place)</h4>
       <div class="bar-row">
         <div class="bar-label">section_aware</div>
         <div class="bar-wrap"><div class="bar-fill accent" style="width:52.9%">0.529</div></div>
@@ -850,7 +849,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <div class="concl-card">
         <div class="concl-icon">🏆</div>
         <h3>section_aware מנצחת</h3>
-        <p>על מסמכים עם מבנה כותרות ברור — חלוקה לפי סעיפים טבעיים עולה פי ~2.7 ב-MRR על כל וריאנט fixed_size</p>
+        <p>על מסמכים עם מבנה כותרות ברור — Chunking לפי סעיפים טבעיים עולה פי ~2.7 ב-MRR על כל וריאנט fixed_size</p>
       </div>
       <div class="concl-card">
         <div class="concl-icon">🔑</div>
@@ -1006,7 +1005,7 @@ code { background: rgba(129,140,248,0.12); color: var(--accent); padding: 2px 7p
       <div class="card">
         <div class="card-icon">🤖</div>
         <h3>איזה מודל הטמעות בפועל?</h3>
-        <p>ה-baseline האקדמי הוא <code>multilingual-e5-large</code> (מקומי, open-source, מאפשר reproducibility). בניסוי השחלפה הוכח ש-<code>gemini-embedding-001</code> (API, 768d) משפר ב-<strong>+11% Hit@5</strong> בשליפה <strong>וגם +10% Correctness</strong> בתשובות — שני מדדים בלתי-תלויים. יישומית: gemini ל-production, e5 כ-baseline שמיר ופרטי.</p>
+        <p>ה-baseline האקדמי הוא <code>multilingual-e5-large</code> (מקומי, open-source, מאפשר reproducibility). בSubstitution Experiment הוכח ש-<code>gemini-embedding-001</code> (API, 768d) משפר ב-<strong>+11% Hit@5</strong> בשליפה <strong>וגם +10% Correctness</strong> in answers — שני מדדים בלתי-תלויים. יישומית: gemini ל-production, e5 כ-baseline שמיר ופרטי.</p>
       </div>
       <div class="card">
         <div class="card-icon">⏱️</div>
@@ -1042,7 +1041,7 @@ echo GEMINI_API_KEY=your_key > .env</pre>
       <div id="tab-index" class="tab-panel">
         <button class="copy-btn" onclick="copyCode('index')">העתק</button>
         <pre id="code-index">python scripts/redact.py       # PDF → Markdown + הסרת PII
-python scripts/chunk.py        # חלוקה לקטעים
+python scripts/chunk.py        # Chunking לקטעים
 python build_index.py          # embedding + ChromaDB
 # → collections: insurance_section_aware (447 chunks)
 # → collections: insurance_fixed         (944 chunks)</pre>
@@ -1062,7 +1061,7 @@ from src.generation import answer
 result = answer('מה הפרנשייז על נזק מלא לרכב?',
                 strategy='section_aware')
 print(result['answer'])
-print('מקורות:', result['sources'])
+print('Sources:', result['sources'])
 "</pre>
       </div>
       <div id="tab-server" class="tab-panel">
@@ -1080,36 +1079,36 @@ print('מקורות:', result['sources'])
 <!-- LIVE DEMO -->
 <section id="demo">
   <div class="reveal">
-    <h2 class="section-title" style="text-align:center;">דמו <span>חי</span></h2>
-    <p class="section-sub" style="text-align:center;">שאל שאלה על הפוליסות — מקבל תשובה אמיתית מה-RAG</p>
+    <h2 class="section-title" style="text-align:center;">Live <span>Demo</span></h2>
+    <p class="section-sub" style="text-align:center;">Ask a question about the policies — get a real answer from the RAG</p>
     <div class="demo-box">
-      <label>שאלה בעברית</label>
+      <label>Question (in Hebrew)</label>
       <textarea class="demo-input" id="q-input" rows="2"
-        placeholder="לדוגמה: מה הפרנשייז על נזק מלא לרכב?"></textarea>
+        placeholder="For example: What is the deductible for side mirror damage?"></textarea>
       <div class="demo-controls">
         <select class="strategy-select" id="strategy-select">
-          <option value="section_aware">section_aware (מומלץ)</option>
+          <option value="section_aware">section_aware (Recommended)</option>
           <option value="fixed">fixed_500</option>
         </select>
-        <button class="ask-btn" id="ask-btn" onclick="askQuestion()">שאל את הפוליסה ✦</button>
+        <button class="ask-btn" id="ask-btn" onclick="askQuestion()">Ask the Policy ✦</button>
         <div class="demo-spinner" id="spinner"></div>
       </div>
       <div class="demo-result" id="demo-result">
         <div class="demo-answer" id="demo-answer"></div>
         <div class="demo-sources" id="demo-sources">
-          <h5>📎 מקורות</h5>
+          <h5>📎 Sources</h5>
           <div id="sources-list"></div>
         </div>
       </div>
       <div class="demo-error" id="demo-error"></div>
       <div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;">שאלות לדוגמה:</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;">Example questions:</div>
         <div class="suggested-qs">
           <span class="sug-q" onclick="fillQ(this)">מה הפרנשייז על נזק מלא לרכב?</span>
-          <span class="sug-q" onclick="fillQ(this)">האם יש כיסוי לגניבת רכב?</span>
-          <span class="sug-q" onclick="fillQ(this)">מה גמלת ההחלמה לאחר השתלה?</span>
-          <span class="sug-q" onclick="fillQ(this)">מה מכסה ביטוח הדירה לנזקי מים?</span>
-          <span class="sug-q" onclick="fillQ(this)">מהו סכום הפיצוי לאחר ניתוח מורכב?</span>
+          <span class="sug-q" onclick="fillQ(this)">Is there coverage for car theft?</span>
+          <span class="sug-q" onclick="fillQ(this)">What is the recovery benefit after a transplant?</span>
+          <span class="sug-q" onclick="fillQ(this)">What does the apartment insurance cover for water damage?</span>
+          <span class="sug-q" onclick="fillQ(this)">What is the compensation amount after a complex surgery?</span>
         </div>
       </div>
     </div>
