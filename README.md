@@ -4,6 +4,8 @@ A full Retrieval-Augmented Generation (RAG) pipeline designed for Hebrew insuran
 
 ![Project Overview](docs/roadmap.html) *(See the [Live Roadmap & Architecture](https://dudumrk2.github.io/insurance-rag/roadmap.html))*
 
+> **Status:** Complete — ingestion, chunking, embeddings, retrieval, generation, evaluation, and Flask demo are all implemented.
+
 > [!NOTE]  
 > A detailed technical report (in Hebrew) covering the methodology, ablation studies, and evaluation is available in [`docs/report.md`](docs/report.md). The original Hebrew README is available in [`README.he.md`](README.he.md).
 

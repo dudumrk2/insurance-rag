@@ -63,7 +63,7 @@ PDF
                               ┌─────────────────────┤
                               ▼                     ▼
                          chunk_fixed         chunk_section_aware
-                         (500/300/700)        (≤700 tokens/section)
+                         (500/300/700 chars)  (≤2,800 chars/section)
                               │                     │
                               └──────────┬──────────┘
                                          ▼
@@ -82,16 +82,16 @@ PDF
                               (Hebrew system prompt, T=0.2)
                                          │
                                          ▼
-                              answer + citations (anchors)
+                              answer + retrieved anchors
 ```
 
 </div>
 
 ### 3.1 חלוקה לקטעים (`Chunking`)
 
-**חלון הזזה (`fixed_size`):** חלוקה לפי מספר `tokens` בחלון הזזה, תוך שימוש ב-`tokenizer` של `multilingual-e5-large` עצמו (ולא ב-`tiktoken`) להבטחת תאימות לבאדג'ט האמיתי של מודל ההטמעות.
+**חלון הזזה (`fixed_size`):** חלוקה לפי מספר **תווים** בחלון הזזה (לא tokens). ברירת המחדל: 500 תווים עם חפיפה של 50 תווים. הגדלים נבחרו על בסיס יחס ממוצע של ~4 תווים לטוקן בעברית, כך ש-500 תווים ≈ 125 טוקן.
 
-**חלוקה לפי סעיפים (`section_aware`):** זיהוי כותרות Markdown‏ (`\n## `) כגבולות חתיכה. פרק שעולה על 700 `tokens` מחולק רקורסיבית לתת-חתיכות. אסטרטגיה זו מנצלת את הסמנטיקה הטבעית של פוליסות ביטוח, שבהן כל סעיף (כיסויים, חריגים, תנאים) הוא יחידה מושגית עצמאית.
+**חלוקה לפי סעיפים (`section_aware`):** זיהוי כותרות Markdown‏ (`\n## `) כגבולות חתיכה. פרק שעולה על 2,800 תווים (≈700 טוקן) מחולק רקורסיבית לתת-חתיכות. אסטרטגיה זו מנצלת את הסמנטיקה הטבעית של פוליסות ביטוח, שבהן כל סעיף (כיסויים, חריגים, תנאים) הוא יחידה מושגית עצמאית.
 
 כל קטע נושא מטא-דאטה: `chunk_id`, `source_doc`, `strategy`, `family_id`, `anchor` (80 התווים הראשונים של הטקסט הגולמי — מפתח `citation` יציב בין האסטרטגיות), ו-`section`.
 
@@ -110,15 +110,17 @@ PDF
 
 ### 3.4 ייצור תשובות (`Generation`)
 
-נבחר `Gemini 2.5 Flash` עם `temperature=0.2` — אותו מודל הפועל ב-`ai-wealth-monitor`, מה שמקל על האינטגרציה העתידית. ה-`prompt` בעברית מכוון את המודל לענות בהתבסס על ההקשר בלבד ולסמן כל טענה עם ה-`anchor` שלה.
+נבחר `Gemini 2.5 Flash` עם `temperature=0.2` — אותו מודל הפועל ב-`ai-wealth-monitor`, מה שמקל על האינטגרציה העתידית.
 
 ה-`prompt` בנוי משתי שכבות:
 
 - **`system`** — `"אתה עוזר המתמחה בפוליסות ביטוח. ענה בעברית בלבד על בסיס ההקשר שסופק."`
-- **`user`** — ההקשר (עד 5 קטעים משורשרים) + השאלה
+- **`user`** — ההקשר (עד 5 קטעים משורשרים ללא תיוג מקור) + השאלה
 
 בחירת `temperature=0.2` מכוונת את המודל לתשובות שמרניות ומבוססות-מקור, ומפחיתה המצאה.
-שני הרסן הנוספים: (א) הוראה מפורשת לענות רק מההקשר; (ב) הוראה לסמן כל טענה עם ה-`anchor` שלה.
+הוראה מפורשת לענות רק מההקשר מכניסה את הרסן הראשי.
+
+**מגבלה ידועה:** הקטעים מועברים כטקסט גולמי משורשר ללא תיוג `chunk_id` או `anchor` ב-`prompt`. כתוצאה, ה-`sources` שמוחזר מ-`answer()` הוא רשימת ה-`anchors` של כלל הקטעים שנשלפו — לא אסמכתאות שהמודל עצמו בחר. מגבלה זו מוכרת כ-`future work` (תיוג context + פלט JSON מובנה).
 
 ---
 
@@ -134,7 +136,7 @@ PDF
 
 3. **עיגון ל-`anchor`** — לכל ציטוט בוצע חיפוש `substring` בקטעי ה-`section_aware`. ה-`anchor` (80 תווים ראשונים) שורד בין האסטרטגיות ומאפשר השוואה הוגנת.
 
-**חשוב:** הגנה מפני הערכה מעגלית (`circular evaluation`) — קבוצת הזהב נוצרה על ידי `Gemini`, בעוד שהשאלות נענות ע"י `Gemini` דרך ה-RAG. שני מסלולים נפרדים = הערכה בלתי-מוטה.
+**הערה על הערכה מעגלית (`circular evaluation`):** ה-`scoring` הוא מכני לחלוטין — Hit@k ו-MRR מבוססים על חיפוש `substring` בקטעי הטקסט האמיתיים, ואינם נשפטים על ידי Gemini. עם זאת, **המועמדים** לקבוצת הזהב נוצרו ע"י `Gemini`, ומנגנון הייצור האוטומטי עלול להטות את התפלגות השאלות לטובת שאלות שמנגנון ה-RAG מטבעו טוב בהן. לכן הניסוח המדויק: **scoring בלתי-מוטה; distribution של שאלות עלולה להיות מוטה-מודל**.
 
 ### 4.2 הרכב קבוצת הזהב
 
@@ -154,9 +156,9 @@ PDF
 
 נוסו ארבע תצורות שליפה על אותן 50 שאלות עם `top_k=5`:
 
-| תצורה | אסטרטגיה | גודל (‏`tokens`) | קטעים |
+| תצורה | אסטרטגיה | גודל (תווים) | קטעים |
 |---|---|---|---|
-| A | `section_aware` | ≤700 (טבעי) | 447 |
+| A | `section_aware` | ≤2,800 (≈700 טוקן, טבעי) | 447 |
 | B | `fixed_500` | 500, חפיפה 50 | 944 |
 | C | `fixed_300` | 300, חפיפה 50 | 1,700 |
 | D | `fixed_700` | 700, חפיפה 50 | 656 |
@@ -193,8 +195,10 @@ PDF
 | מודל | ממד | Hit@1 | Hit@3 | Hit@5 | MRR |
 |---|---|---|---|---|---|
 | **`gemini-embedding-001`** ⭐ | 768 | **0.500** | **0.740** | **0.800** | **0.615** |
-| `multilingual-e5-large` (baseline) | 1,024 | — | — | 0.720 | 0.534 |
+| `multilingual-e5-large` (baseline)† | 1,024 | — | — | 0.720 | 0.534 |
 | **∆** | −256 | — | — | **+0.080** | **+0.081** |
+
+†ה-`e5 baseline` (0.720/0.534) הוא ריצה עצמאית של `run_eval.py` שנעשתה במקביל לניסוי ההטמעות. ההבדל מ-0.740/0.529 (חלק 5.2) נובע מ-variance ב-HNSW בין ריצות — הסבר מלא ב-`eval/embedding_ablation_results.md`.
 
 `gemini-embedding-001` עולה ב-**+11% Hit@5** ו-**+15% MRR** — תוך ממד קטן יותר וללא `torch` מקומי.
 מסקנה: על עברית, `task_type` א-סימטרי של `gemini-embedding-001` עדיף על תחיליות `e5`.
@@ -223,8 +227,29 @@ PDF
 **תצפיות:**
 
 - **חוזקות** — המודל מתפקד טוב על שאלות עובדתיות וחוזיות מסובכות (Q3, Q7, Q8, Q9, Q10), כאשר הוא מסוגל להשחזר מרובות קטעים ולשלב אותם לתשובה ממוקדת.
-- **חולשות** — במשימות `numerical` (שאלות על סכומים, דמים, תעריפים), המודל מראה קצב חזזור נמוך (3/10 הצליח). זאת עלולה להיות תוצאה של: (א) המודל לא השיג את הקטעים הנכונים; (ב) קטעי `section_aware` לא מכילים את הטבלאות המלאות שמהן אפשר לחלץ את המספרים; (ג) מודל הטמעות לא מציב מספיק משקל על התאימה המדויקת של מחרוזות מספריות.
+- **חולשות** — במשימות `numerical` (שאלות על סכומים, דמים, תעריפים), המודל מראה קצב הצלחה נמוך (3/10 הצליחו). זאת עלולה להיות תוצאה של: (א) המודל לא השיג את הקטעים הנכונים; (ב) קטעי `section_aware` לא מכילים את הטבלאות המלאות שמהן אפשר לחלץ את המספרים; (ג) מודל הטמעות לא מציב מספיק משקל על התאימה המדויקת של מחרוזות מספריות.
 - **שיפור עתידי** — שילוב שליפה היברידית (BM25 + וקטורית) עשוי לשפר את היצירה של תשובות מספריות, שכן BM25 תופסת התאמה מילולית מדויקת בטבלאות ורשימות.
+
+#### השוואה: אותן 10 שאלות עם `gemini-embedding-001` retrieval
+
+כדי לבחון אם השיפור ב-Hit@5 שהתקבל בסעיף 5.4 מתורגם גם לאיכות תשובות, הורצה אותה הערכה בדיוק (10 שאלות, אותו prompt, אותו Gemini 2.5 Flash) — תוך החלפת **רק** מודל ההטמעות לשליפה. הסקריפט: `eval/answer_eval_gemini.py`.
+
+| מודל הטמעות לשליפה | Correct | Incorrect | שיפור Δ |
+|---|---|---|---|
+| `multilingual-e5-large` (baseline) | 6/10 | 4/10 | — |
+| **`gemini-embedding-001`** | **7/10** | **3/10** | **+10%** |
+
+הבדלים ברמת השאלה:
+
+| שאלה | קטגוריה | e5 | gemini | פרשנות |
+|---|---|---|---|---|
+| Q1 (השתתפות עצמית) | numerical | Incorrect (אמר "0") | Incorrect (אמר "לא במפרט") | gemini נמנע מהמצאה — סוג כשל איכותי יותר |
+| Q2 (גבול אחריות) | numerical | Correct (2,833,953) | **Incorrect** (שלף 600K/1.2M) | רגרסיה: gemini שלף קטע סמנטית-קרוב אבל לא נכון |
+| Q5 (פרמיה פנסים) | numerical | Incorrect | **Correct (58 ש"ח)** ⭐ | שיפור על שאלת "שורה בטבלה" |
+| Q6 (פרמיה גרירה) | numerical | Incorrect | **Correct (274 ש"ח)** ⭐ | שיפור על שאלת "שורה בטבלה" |
+| Q3, Q4, Q7-Q10 | mixed | — | — | זהה (5 Correct, 1 Incorrect) |
+
+**מסקנה:** השיפור של +11% Hit@5 (סעיף 5.4) מתורגם ל-+10% Answer Correctness — שני המדדים מתואמים. הכשלים שנשארים משותפים ב-Q1 ו-Q4 מצביעים על קטעי `section_aware` שלא שומרים שורות טבלה מלאות — כלומר זוהי מגבלת **chunking**, לא embedding. זה מחזק את "שיפור עתידי" של hybrid retrieval (BM25 + dense) או chunking מודע-טבלאות.
 
 ---
 
@@ -258,6 +283,51 @@ PDF
 
 ---
 
+## 8. מה הלאה — נתיבי שיפור
+
+מערכת הנוכחית מגיעה ל-**7/10 תשובות נכונות** עם `gemini-embedding-001` ול-Hit@5=0.800 בשליפה. שלושת הכשלים הנותרים (Q1, Q2, Q4) הם כולם שאלות מספריות מטבלאות — כשל שיטתי ולא אקראי.
+
+### 8.1 ניתוח שורש הכשלים
+
+שיטת ה-`section_aware` חותכת לפי כותרות Markdown, כך שכל טבלה הופכת ל-chunk אחד של עד 2,800 תווים. שורות בודדות בתוך הטבלה אינן ניתנות לשליפה בנפרד — Dense embedding "מאבד" ערכים כמו `58 ש"ח` לתוך הרעש הסמנטי של הסעיף כולו.
+
+### 8.2 שיפורים לפי עלות-תועלת
+
+**שכבה 1 — שינויי Prompt (שעות):**
+
+| שיפור | תועלת עיקרית |
+|---|---|
+| תיוג `[מסמך, סעיף]` לפני כל chunk ב-context | ציטוטים ניתנים לאימות |
+| הוראת refusal: "אם לא נמצא במפורש — אמור כך" | הפחתת hallucination |
+| פלט JSON מובנה (`answer`, `evidence_quote`, `cannot_answer`) | traceability מלא |
+
+**שכבה 2 — שיפור שליפה (ימים):**
+
+| שיפור | תועלת עיקרית |
+|---|---|
+| **Hybrid BM25 + Dense** (מיזוג via RRF) | מספרים וביטויים מדויקים — ROI גבוה ביותר |
+| Similarity threshold לפני Generation | מניעת קריאת Gemini כשהשליפה חלשה |
+| Cross-encoder Reranker (top-20 → top-5) | שיפור Hit@1 |
+
+**שכבה 3 — שינוי ארכיטקטורה (שבוע):**
+
+**Table-aware chunking** — הפתרון השורשי ל-Q1/Q2/Q4. כל שורת טבלה הופכת ל-chunk עצמאי עם header context חוזר:
+
+```python
+# לפני: chunk אחד לכל הטבלה
+# אחרי: chunk לכל שורה
+"פרמיות / פנסים ומראות צד: 58 ש"ח"   # retrievable ישירות
+"פרמיות / גוף הרכב: 1,200 ש"ח"
+```
+
+### 8.3 נתיב מומלץ
+
+שיפורי Prompt (שכבה 1) + BM25 Hybrid (שכבה 2) ניתנים למימוש תוך יום-יומיים ועשויים להביא את המערכת ל-8–9/10 על אותן 10 שאלות. Table-aware chunking הוא הפתרון הנכון לטווח הרחוק לכלל שאלות הטבלאות.
+
+פירוט מלא עם code snippets, before/after diffs, וטבלת עדיפויות: [`docs/roadmap.html`](https://dudumrk2.github.io/insurance-rag/roadmap.html)
+
+---
+
 ## נספח — הרצה, קישורים והסברים נוספים
 
 ### א. הרצת ה-`Pipeline` מקצה לקצה
@@ -276,19 +346,19 @@ pip install -e ".[all]"
 # 2. הגדרת מפתחות API (יצירת קובץ .env בשורש הפרויקט)
 echo "GEMINI_API_KEY=your_key_here" > .env
 
-# 3. המרת PDF ל-Markdown (דורש קבצי PDF ב-data/raw/)
-python scripts/pdf_to_md.py
-
-# 4. הסרת PII מהמסמכים
+# 3. המרת PDF ל-Markdown + הסרת PII (דורש קבצי PDF ב-data/raw/)
 python scripts/redact.py
 
-# 5. בניית ה-Index (chunking + embedding + ChromaDB)
+# 4. חלוקה לקטעים
+python scripts/chunk.py
+
+# 5. בניית ה-Index (embedding + ChromaDB)
 #    כותב: data/processed/chunks_*.jsonl + indices/
 python build_index.py
 
 # 6. בניית Gold Set (ייצור 75 מועמדים + בחירה ידנית של 50)
 python scripts/build_gold_set.py --out eval/gold_set_candidates.jsonl
-#    פתח eval/selector.html בדפדפן → בחר 50 שאלות → שמור ל-eval/gold_set.jsonl
+#    פתח docs/selector.html בדפדפן → בחר 50 שאלות → שמור ל-eval/gold_set.jsonl
 
 # 7. הרצת Ablation Study (כולל fixed_300 ו-fixed_700 — ~45 דקות CPU)
 python eval/run_eval.py --out eval/ablation_results.md
@@ -301,8 +371,8 @@ print(result['answer'])
 print('מקורות:', result['sources'])
 "
 
-# 9. הרצת כל הטסטים
-python -m pytest tests/ -v
+# 9. הרצת הטסטים המהירים שאינם דורשים שרת
+python -m pytest -q -m "not slow" --ignore=tests/test_server.py
 ```
 
 </div>
@@ -320,7 +390,7 @@ python -m pytest tests/ -v
 | `src/redaction.py` | הסרת PII (‏`regex` + מחרוזות ידועות) | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/src/redaction.py) |
 | `build_index.py` | ‏CLI לבניית `indexes` ב-`ChromaDB` | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/build_index.py) |
 | `scripts/build_gold_set.py` | ייצור 75 מועמדים ע"י `Gemini` | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/scripts/build_gold_set.py) |
-| `eval/selector.html` | כלי HTML אינטראקטיבי לבחירת 50 שאלות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/selector.html) |
+| `docs/selector.html` | כלי HTML אינטראקטיבי לבחירת 50 שאלות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/docs/selector.html) |
 | `eval/run_eval.py` | ניסוי ההשחלפה — Hit@k ו-MRR | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/run_eval.py) |
 | `eval/gold_set.jsonl` | 50 שאלות הזהב הסופיות | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/gold_set.jsonl) |
 | `eval/ablation_results.md` | תוצאות ניסוי ההשחלפה | [🔗](https://github.com/dudumrk2/insurance-rag/blob/master/eval/ablation_results.md) |
@@ -365,6 +435,11 @@ python -m pytest tests/ -v
 
 התלויות מחולקות ל-`extras` כדי שכל שלב יתקין רק מה שצריך:
 
+הערת סטטוס: המימוש של `scripts/build_gold_set.py` כבר משתמש ב-`google-genai`, אבל
+מטא-דאטת התלויות עדיין כוללת שארית היסטורית של `anthropic` ב-`goldset`/`all`,
+ו-`dev` אינו מתקין את כל התלויות הדרושות להרצת כל הטסטים בסביבה נקייה. ניקוי
+המטא-דאטה נשאר ל-PR נפרד כדי שהעדכון הנוכחי יהיה תיעודי בלבד.
+
 <div dir="ltr">
 
 ```toml
@@ -373,6 +448,8 @@ pdf        = ["docling>=2.0"]
 embeddings = ["sentence-transformers>=3.0", "torch>=2.2"]
 vectorstore= ["chromadb>=0.5"]
 generation = ["google-genai>=0.8"]
+goldset    = ["anthropic>=0.40"]  # stale metadata; implementation uses google-genai
+server     = ["flask>=3.0", "flask-cors>=4.0"]
 dev        = ["pytest>=8.0", "python-dotenv>=1.0"]
 all        = [...]   # הכל ביחד
 ```

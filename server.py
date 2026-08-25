@@ -55,6 +55,32 @@ def ask():
         return jsonify({"error": "Failed to generate answer"}), 500
 
 
+def _do_warmup():
+    try:
+        logger.info("Starting background warmup...")
+        # 1. Warm up SentenceTransformer model
+        from src.embedder import _get_model
+        _get_model()
+        logger.info("SentenceTransformer model loaded.")
+
+        # 2. Warm up ChromaDB collections
+        from src.indexer import load_collection
+        load_collection("fixed")
+        load_collection("section_aware")
+        logger.info("ChromaDB collections loaded.")
+        logger.info("Background warmup completed successfully.")
+    except Exception as exc:
+        logger.error(f"Error during background warmup: {exc}", exc_info=True)
+
+
+@app.route("/warmup", methods=["GET", "POST"])
+def warmup():
+    # Run synchronously so that Cloud Run keeps the CPU active (unthrottled)
+    # while the model and database are loading.
+    _do_warmup()
+    return jsonify({"status": "warmed_up"}), 200
+
+
 if __name__ == "__main__":
     print("RAG server running on http://localhost:5000")
     app.run(host="0.0.0.0", port=5000, debug=False)

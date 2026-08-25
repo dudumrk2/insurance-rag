@@ -63,3 +63,13 @@ def test_cors_header_present(client):
         content_type="application/json",
     )
     assert "Access-Control-Allow-Origin" in resp.headers
+
+
+def test_warmup_returns_warming_up(client, monkeypatch):
+    import server
+    monkeypatch.setattr(server, "_do_warmup", lambda: None)
+    resp = client.post("/warmup")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["status"] == "warmed_up"
+

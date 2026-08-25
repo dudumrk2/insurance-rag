@@ -153,10 +153,12 @@ def _call_gemini(prompt: str) -> str:
     from src.config import GENERATION_MODEL
 
     from google import genai
+    from google.genai import types
 
     client = genai.Client()
     response = client.models.generate_content(
         model=GENERATION_MODEL,
         contents=prompt,
+        config=types.GenerateContentConfig(temperature=0.2),
     )
     return response.text
